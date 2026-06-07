@@ -15,25 +15,54 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useCreateBooking, useGetTrip } from "@workspace/api-client-react";
+import { useCreateBooking, useGetBooking, useGetTrip } from "@workspace/api-client-react";
 import type { Booking } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useDriverLocation } from "@/hooks/useDriverLocation";
+import { LiveDriverMap } from "@/components/LiveDriverMap";
+
+const LIVE_STATUSES = ["accepted", "in_progress"];
 
 export default function TripDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, bookingId } = useLocalSearchParams<{ id: string; bookingId?: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [newBooking, setNewBooking] = useState<Booking | null>(null);
 
   const tripId = parseInt(id ?? "0", 10);
+  const parsedBookingId = bookingId ? parseInt(bookingId, 10) : undefined;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: trip, isLoading } = useGetTrip(tripId, { query: { enabled: !!tripId } as any });
+  const { data: trip, isLoading: tripLoading } = useGetTrip(tripId, { query: { enabled: !!tripId } as any });
+
+  // Fetch the existing booking if bookingId was passed via query param
+  const { data: existingBooking, isLoading: bookingLoading } = useGetBooking(
+    parsedBookingId ?? 0,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { query: { enabled: !!parsedBookingId } as any },
+  );
+
   const createBookingMutation = useCreateBooking();
+
+  // Determine the active booking (either just-created or fetched existing)
+  const activeBooking = newBooking ?? existingBooking ?? null;
+  const showLiveMap = !!activeBooking && LIVE_STATUSES.includes(activeBooking.status);
+
+  // Driver's userId for WebSocket subscription
+  const driverUserId = trip?.driverProfile?.userId ?? null;
+
+  const { location: driverLocation, isConnected } = useDriverLocation({
+    driverUserId,
+    accessToken,
+    enabled: showLiveMap,
+  });
+
+  const isLoading = tripLoading || (!!parsedBookingId && bookingLoading);
 
   async function handleBook() {
     if (!trip || !user?.id) return;
@@ -68,7 +97,7 @@ export default function TripDetailScreen() {
           dropoffLng: trip.destLng,
         },
       });
-      setBooking(result);
+      setNewBooking(result);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Could not complete booking";
@@ -105,7 +134,8 @@ export default function TripDetailScreen() {
   const driverName = driver?.name ?? "Driver";
   const initials = driverName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
-  if (booking) {
+  // --- Booking success view (just booked, status = pending) ---
+  if (newBooking && !showLiveMap) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.topBar, { paddingTop: topPad + 8 }]}>
@@ -124,26 +154,26 @@ export default function TripDetailScreen() {
             Waiting for driver confirmation
           </Text>
 
-          {booking.boardingCode && (
+          {newBooking.boardingCode && (
             <View style={[styles.boardingBox, { backgroundColor: colors.card, borderColor: `${colors.primary}40` }]}>
               <Text style={[styles.boardingLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                 Boarding Code
               </Text>
               <Text style={[styles.boardingCode, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
-                {booking.boardingCode}
+                {newBooking.boardingCode}
               </Text>
             </View>
           )}
 
           <View style={[styles.bookingInfoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.bookingInfoRow, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              Fare: <Text style={[styles.bookingInfoVal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>₹{booking.fare.toFixed(0)}</Text>
+              Fare: <Text style={[styles.bookingInfoVal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>₹{newBooking.fare.toFixed(0)}</Text>
             </Text>
             <Text style={[styles.bookingInfoRow, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              From: <Text style={[styles.bookingInfoVal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{booking.pickupAddress}</Text>
+              From: <Text style={[styles.bookingInfoVal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{newBooking.pickupAddress}</Text>
             </Text>
             <Text style={[styles.bookingInfoRow, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              To: <Text style={[styles.bookingInfoVal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{booking.dropoffAddress}</Text>
+              To: <Text style={[styles.bookingInfoVal, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{newBooking.dropoffAddress}</Text>
             </Text>
           </View>
 
@@ -160,6 +190,113 @@ export default function TripDetailScreen() {
     );
   }
 
+  // --- Live tracking view (booking accepted or in_progress) ---
+  if (showLiveMap) {
+    const liveDriverLat = driverLocation?.lat ?? (trip.driverProfile?.currentLat ?? trip.originLat);
+    const liveDriverLng = driverLocation?.lng ?? (trip.driverProfile?.currentLng ?? trip.originLng);
+    const pickupLat = activeBooking.pickupLat;
+    const pickupLng = activeBooking.pickupLng;
+
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.topBar, { paddingTop: topPad + 8 }]}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={colors.foreground} />
+          </Pressable>
+          <Text style={[styles.topBarTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            Track Your Ride
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}>
+          {/* Status banner */}
+          <View style={[styles.statusBanner, {
+            backgroundColor: activeBooking.status === "in_progress" ? `${colors.success}15` : `${colors.primary}15`,
+            borderColor: activeBooking.status === "in_progress" ? `${colors.success}40` : `${colors.primary}40`,
+          }]}>
+            <View style={[styles.statusDot, {
+              backgroundColor: activeBooking.status === "in_progress" ? colors.success : colors.primary,
+            }]} />
+            <Text style={[styles.statusText, {
+              color: activeBooking.status === "in_progress" ? colors.success : colors.primary,
+              fontFamily: "Inter_600SemiBold",
+            }]}>
+              {activeBooking.status === "in_progress" ? "Ride in progress" : "Driver confirmed — on the way"}
+            </Text>
+          </View>
+
+          {/* Live map */}
+          <LiveDriverMap
+            driverLat={liveDriverLat}
+            driverLng={liveDriverLng}
+            pickupLat={pickupLat}
+            pickupLng={pickupLng}
+            isConnected={isConnected}
+            updatedAt={driverLocation?.updatedAt}
+          />
+
+          {/* Driver info */}
+          <View style={[styles.driverCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.driverAvatar, { backgroundColor: `${colors.primary}33` }]}>
+              <Text style={[styles.driverAvatarText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                {initials}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.driverName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {driverName}
+              </Text>
+              {vehicle && (
+                <Text style={[styles.vehicleText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {vehicle.color} {vehicle.make} {vehicle.model} · {vehicle.licensePlate}
+                </Text>
+              )}
+              <View style={styles.ratingRow}>
+                <Ionicons name="star" size={13} color="#facc15" />
+                <Text style={[styles.ratingText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {trip.driverProfile?.rating?.toFixed(1) ?? "—"} · {trip.driverProfile?.totalTrips} trips
+                </Text>
+              </View>
+            </View>
+            {activeBooking.boardingCode && (
+              <View style={[styles.miniCodeBadge, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}40` }]}>
+                <Text style={[styles.miniCodeLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Code</Text>
+                <Text style={[styles.miniCodeValue, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                  {activeBooking.boardingCode}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Route summary */}
+          <View style={[styles.routeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.routeRow}>
+              <View style={[styles.routeDot, { borderColor: colors.success }]} />
+              <View style={styles.routeInfo}>
+                <Text style={[styles.routeLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Pickup</Text>
+                <Text style={[styles.routeAddr, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {activeBooking.pickupAddress}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.routeConnector, { backgroundColor: colors.border }]} />
+            <View style={styles.routeRow}>
+              <View style={[styles.routeDotFilled, { backgroundColor: colors.destructive }]} />
+              <View style={styles.routeInfo}>
+                <Text style={[styles.routeLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Drop-off</Text>
+                <Text style={[styles.routeAddr, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {activeBooking.dropoffAddress}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // --- Default: trip detail view (before booking) ---
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.topBar, { paddingTop: topPad + 8 }]}>
@@ -303,6 +440,21 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, justifyContent: "center" },
   topBarTitle: { fontSize: 17 },
   content: { padding: 16, gap: 12 },
+  statusBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: { fontSize: 14 },
   driverCard: {
     borderRadius: 14,
     borderWidth: 1,
@@ -323,6 +475,14 @@ const styles = StyleSheet.create({
   vehicleText: { fontSize: 13, marginTop: 2 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   ratingText: { fontSize: 13 },
+  miniCodeBadge: {
+    alignItems: "center",
+    padding: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  miniCodeLabel: { fontSize: 10 },
+  miniCodeValue: { fontSize: 18, letterSpacing: 2 },
   routeCard: {
     borderRadius: 14,
     borderWidth: 1,

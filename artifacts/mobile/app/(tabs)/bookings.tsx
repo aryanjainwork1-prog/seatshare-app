@@ -12,6 +12,7 @@ import { useColors } from "@/hooks/useColors";
 const STATUS_COLORS: Record<string, string> = {
   pending: "#d97706",
   accepted: "#0080ff",
+  in_progress: "#7c3aed",
   completed: "#16a34a",
   rejected: "#dc2626",
   cancelled: "#6b7280",
@@ -20,12 +21,14 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
   accepted: "Confirmed",
+  in_progress: "In Progress",
   completed: "Completed",
   rejected: "Rejected",
   cancelled: "Cancelled",
 };
 
-const ACTIVE_STATUSES = new Set(["pending", "accepted"]);
+const ACTIVE_STATUSES = new Set(["pending", "accepted", "in_progress"]);
+const TRACKABLE_STATUSES = new Set(["accepted", "in_progress"]);
 
 export default function BookingsScreen() {
   const colors = useColors();
@@ -63,7 +66,7 @@ export default function BookingsScreen() {
     const statusLabel = STATUS_LABELS[booking.status] ?? booking.status;
     const trip = booking.trip;
     const isActive = ACTIVE_STATUSES.has(booking.status);
-    const isAccepted = booking.status === "accepted";
+    const isTrackable = TRACKABLE_STATUSES.has(booking.status);
 
     const driverProfile = (trip as { driverProfile?: { user?: { name?: string }; vehicle?: { make?: string; model?: string; color?: string; licensePlate?: string }; rating?: number } } | undefined)?.driverProfile;
     const driverName = driverProfile?.user?.name;
@@ -71,7 +74,7 @@ export default function BookingsScreen() {
     const rating = driverProfile?.rating;
 
     return (
-      <View
+      <Pressable
         key={booking.id}
         style={[
           styles.card,
@@ -178,7 +181,7 @@ export default function BookingsScreen() {
           </View>
         )}
 
-        {isAccepted && (
+        {isTrackable && (
           <Pressable
             style={({ pressed }) => [
               styles.trackBtn,
@@ -201,7 +204,7 @@ export default function BookingsScreen() {
             year: "numeric",
           })}
         </Text>
-      </View>
+      </Pressable>
     );
   }
 
