@@ -1,36 +1,1571 @@
-openapi: 3.1.0
+openapi: "3.1.0"
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: "1.0.0"
+  description: SeatShare ride-sharing platform API
+
 servers:
   - url: /api
-    description: Base API path
-tags:
-  - name: health
-    description: Health operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
-          description: Healthy
+          description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/send-otp:
+    post:
+      operationId: sendOtp
+      summary: Send OTP to phone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpRequest"
+      responses:
+        "200":
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpResponse"
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      summary: Verify OTP and get tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpVerify"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: New tokens
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+
+  /users:
+    get:
+      operationId: listUsers
+      summary: List all users
+      parameters:
+        - in: query
+          name: role
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      summary: Get user by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateUser
+      summary: Update user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}/suspend:
+    patch:
+      operationId: suspendUser
+      summary: Suspend or unsuspend a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuspendInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /driver-profiles:
+    get:
+      operationId: listDriverProfiles
+      summary: List driver profiles
+      parameters:
+        - in: query
+          name: isOnline
+          schema:
+            type: boolean
+        - in: query
+          name: isVerified
+          schema:
+            type: boolean
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of driver profiles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfileList"
+
+  /driver-profiles/{id}:
+    get:
+      operationId: getDriverProfile
+      summary: Get driver profile by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Driver profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfile"
+    patch:
+      operationId: updateDriverProfile
+      summary: Update driver profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverProfileUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfile"
+
+  /driver-profiles/{id}/verify:
+    patch:
+      operationId: verifyDriverProfile
+      summary: Verify or unverify a driver
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfile"
+
+  /vehicles:
+    get:
+      operationId: listVehicles
+      summary: List all vehicles
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VehicleList"
+    post:
+      operationId: createVehicle
+      summary: Register a vehicle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+
+  /vehicles/{id}:
+    get:
+      operationId: getVehicle
+      summary: Get vehicle by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vehicle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+    patch:
+      operationId: updateVehicle
+      summary: Update vehicle
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+
+  /trips:
+    get:
+      operationId: listTrips
+      summary: List trips
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: driverProfileId
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of trips
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripList"
+    post:
+      operationId: createTrip
+      summary: Driver publishes a trip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+
+  /trips/{id}:
+    get:
+      operationId: getTrip
+      summary: Get trip by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+    patch:
+      operationId: updateTrip
+      summary: Update trip
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+
+  /trips/{id}/cancel:
+    patch:
+      operationId: cancelTrip
+      summary: Cancel a trip
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelInput"
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+
+  /bookings:
+    get:
+      operationId: listBookings
+      summary: List bookings
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: tripId
+          schema:
+            type: integer
+        - in: query
+          name: passengerId
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingList"
+    post:
+      operationId: createBooking
+      summary: Passenger requests a seat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      summary: Get booking by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{id}/accept:
+    patch:
+      operationId: acceptBooking
+      summary: Driver accepts a booking
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptInput"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{id}/reject:
+    patch:
+      operationId: rejectBooking
+      summary: Driver rejects a booking
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectInput"
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{id}/complete:
+    patch:
+      operationId: completeBooking
+      summary: Mark booking as completed
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteInput"
+      responses:
+        "200":
+          description: Completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /payments:
+    get:
+      operationId: listPayments
+      summary: List payments
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: bookingId
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of payments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentList"
+    post:
+      operationId: createPayment
+      summary: Initiate payment for a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /payments/{id}:
+    get:
+      operationId: getPayment
+      summary: Get payment by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /ratings:
+    get:
+      operationId: listRatings
+      summary: List ratings
+      parameters:
+        - in: query
+          name: ratedId
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of ratings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RatingList"
+    post:
+      operationId: createRating
+      summary: Rate a driver or passenger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RatingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rating"
+
+  /support-tickets:
+    get:
+      operationId: listSupportTickets
+      summary: List support tickets
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicketList"
+    post:
+      operationId: createSupportTicket
+      summary: Create a support ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportTicketInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicket"
+
+  /support-tickets/{id}:
+    get:
+      operationId: getSupportTicket
+      summary: Get support ticket by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicket"
+    patch:
+      operationId: updateSupportTicket
+      summary: Update support ticket
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportTicketUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicket"
+
+  /stats/overview:
+    get:
+      operationId: getStatsOverview
+      summary: Platform overview stats for admin
+      responses:
+        "200":
+          description: Overview stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsOverview"
+
+  /stats/activity:
+    get:
+      operationId: getStatsActivity
+      summary: Recent platform activity
+      responses:
+        "200":
+          description: Activity data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsActivity"
+
+  /match:
+    post:
+      operationId: matchDrivers
+      summary: Find matching drivers for a passenger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchRequest"
+      responses:
+        "200":
+          description: Matched drivers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchResultList"
+
+  /admin-logs:
+    get:
+      operationId: listAdminLogs
+      summary: List admin action logs
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Admin logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLogList"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    OtpRequest:
+      type: object
+      required: [phone]
+      properties:
+        phone:
+          type: string
+
+    OtpResponse:
+      type: object
+      required: [message, sessionId]
+      properties:
+        message:
+          type: string
+        sessionId:
+          type: string
+
+    OtpVerify:
+      type: object
+      required: [phone, otp, sessionId]
+      properties:
+        phone:
+          type: string
+        otp:
+          type: string
+        sessionId:
+          type: string
+        role:
+          type: string
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    AuthTokens:
+      type: object
+      required: [accessToken, refreshToken, user]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      required: [id, phone, role, status, createdAt]
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        name:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        role:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    UserList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        avatarUrl:
+          type: string
+
+    SuspendInput:
+      type: object
+      required: [suspend]
+      properties:
+        suspend:
+          type: boolean
+        reason:
+          type: string
+
+    DriverProfile:
+      type: object
+      required: [id, userId, isVerified, isOnline, rating, totalTrips, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        licenseNumber:
+          type: ["string", "null"]
+        rating:
+          type: number
+        totalTrips:
+          type: integer
+        isVerified:
+          type: boolean
+        isOnline:
+          type: boolean
+        currentLat:
+          type: ["number", "null"]
+        currentLng:
+          type: ["number", "null"]
+        user:
+          $ref: "#/components/schemas/User"
+        vehicle:
+          oneOf:
+            - $ref: "#/components/schemas/Vehicle"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+
+    DriverProfileList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverProfile"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    DriverProfileUpdate:
+      type: object
+      properties:
+        licenseNumber:
+          type: string
+        currentLat:
+          type: number
+        currentLng:
+          type: number
+
+    VerifyInput:
+      type: object
+      required: [verified]
+      properties:
+        verified:
+          type: boolean
+
+    Vehicle:
+      type: object
+      required: [id, driverProfileId, make, model, year, color, licensePlate, capacity, createdAt]
+      properties:
+        id:
+          type: integer
+        driverProfileId:
+          type: integer
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        color:
+          type: string
+        licensePlate:
+          type: string
+        capacity:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    VehicleList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Vehicle"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    VehicleInput:
+      type: object
+      required: [driverProfileId, make, model, year, color, licensePlate, capacity]
+      properties:
+        driverProfileId:
+          type: integer
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        color:
+          type: string
+        licensePlate:
+          type: string
+        capacity:
+          type: integer
+
+    VehicleUpdate:
+      type: object
+      properties:
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        color:
+          type: string
+        licensePlate:
+          type: string
+        capacity:
+          type: integer
+
+    Trip:
+      type: object
+      required: [id, driverProfileId, originAddress, destAddress, originLat, originLng, destLat, destLng, availableSeats, maxDeviationKm, status, farePerSeat, departureTime, createdAt]
+      properties:
+        id:
+          type: integer
+        driverProfileId:
+          type: integer
+        originAddress:
+          type: string
+        destAddress:
+          type: string
+        originLat:
+          type: number
+        originLng:
+          type: number
+        destLat:
+          type: number
+        destLng:
+          type: number
+        availableSeats:
+          type: integer
+        maxDeviationKm:
+          type: number
+        status:
+          type: string
+        farePerSeat:
+          type: number
+        departureTime:
+          type: string
+          format: date-time
+        driverProfile:
+          oneOf:
+            - $ref: "#/components/schemas/DriverProfile"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+
+    TripList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Trip"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    TripInput:
+      type: object
+      required: [driverProfileId, originAddress, destAddress, originLat, originLng, destLat, destLng, availableSeats, maxDeviationKm, farePerSeat, departureTime]
+      properties:
+        driverProfileId:
+          type: integer
+        originAddress:
+          type: string
+        destAddress:
+          type: string
+        originLat:
+          type: number
+        originLng:
+          type: number
+        destLat:
+          type: number
+        destLng:
+          type: number
+        availableSeats:
+          type: integer
+        maxDeviationKm:
+          type: number
+        farePerSeat:
+          type: number
+        departureTime:
+          type: string
+          format: date-time
+
+    TripUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+        availableSeats:
+          type: integer
+
+    CancelInput:
+      type: object
+      properties:
+        reason:
+          type: string
+
+    Booking:
+      type: object
+      required: [id, tripId, passengerId, pickupAddress, dropoffAddress, pickupLat, pickupLng, dropoffLat, dropoffLng, status, fare, createdAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        passengerId:
+          type: integer
+        pickupAddress:
+          type: string
+        dropoffAddress:
+          type: string
+        pickupLat:
+          type: number
+        pickupLng:
+          type: number
+        dropoffLat:
+          type: number
+        dropoffLng:
+          type: number
+        status:
+          type: string
+        fare:
+          type: number
+        boardingCode:
+          type: ["string", "null"]
+        rejectionReason:
+          type: ["string", "null"]
+        trip:
+          oneOf:
+            - $ref: "#/components/schemas/Trip"
+            - type: "null"
+        passenger:
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+
+    BookingList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    BookingInput:
+      type: object
+      required: [tripId, passengerId, pickupAddress, dropoffAddress, pickupLat, pickupLng, dropoffLat, dropoffLng]
+      properties:
+        tripId:
+          type: integer
+        passengerId:
+          type: integer
+        pickupAddress:
+          type: string
+        dropoffAddress:
+          type: string
+        pickupLat:
+          type: number
+        pickupLng:
+          type: number
+        dropoffLat:
+          type: number
+        dropoffLng:
+          type: number
+
+    AcceptInput:
+      type: object
+      properties:
+        note:
+          type: string
+
+    RejectInput:
+      type: object
+      properties:
+        reason:
+          type: string
+
+    CompleteInput:
+      type: object
+      properties:
+        boardingCode:
+          type: string
+
+    Payment:
+      type: object
+      required: [id, bookingId, amount, status, method, createdAt]
+      properties:
+        id:
+          type: integer
+        bookingId:
+          type: integer
+        amount:
+          type: number
+        status:
+          type: string
+        method:
+          type: string
+        transactionId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    PaymentInput:
+      type: object
+      required: [bookingId, amount, method]
+      properties:
+        bookingId:
+          type: integer
+        amount:
+          type: number
+        method:
+          type: string
+
+    Rating:
+      type: object
+      required: [id, bookingId, raterId, ratedId, score, createdAt]
+      properties:
+        id:
+          type: integer
+        bookingId:
+          type: integer
+        raterId:
+          type: integer
+        ratedId:
+          type: integer
+        score:
+          type: integer
+        comment:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    RatingList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Rating"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    RatingInput:
+      type: object
+      required: [bookingId, raterId, ratedId, score]
+      properties:
+        bookingId:
+          type: integer
+        raterId:
+          type: integer
+        ratedId:
+          type: integer
+        score:
+          type: integer
+        comment:
+          type: string
+
+    SupportTicket:
+      type: object
+      required: [id, userId, subject, message, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        subject:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+        resolution:
+          type: ["string", "null"]
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+
+    SupportTicketList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupportTicket"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    SupportTicketInput:
+      type: object
+      required: [userId, subject, message]
+      properties:
+        userId:
+          type: integer
+        subject:
+          type: string
+        message:
+          type: string
+
+    SupportTicketUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+        resolution:
+          type: string
+
+    StatsOverview:
+      type: object
+      required: [totalUsers, totalDrivers, totalTrips, activeTrips, totalBookings, pendingBookings, totalRevenue, openTickets, onlineDrivers]
+      properties:
+        totalUsers:
+          type: integer
+        totalDrivers:
+          type: integer
+        totalTrips:
+          type: integer
+        activeTrips:
+          type: integer
+        totalBookings:
+          type: integer
+        pendingBookings:
+          type: integer
+        totalRevenue:
+          type: number
+        openTickets:
+          type: integer
+        onlineDrivers:
+          type: integer
+
+    StatsActivity:
+      type: object
+      required: [recentTrips, recentBookings, recentUsers, tripsByDay, revenueByDay]
+      properties:
+        recentTrips:
+          type: array
+          items:
+            $ref: "#/components/schemas/Trip"
+        recentBookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        recentUsers:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        tripsByDay:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayStat"
+        revenueByDay:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayStat"
+
+    DayStat:
+      type: object
+      required: [date, value]
+      properties:
+        date:
+          type: string
+        value:
+          type: number
+
+    MatchRequest:
+      type: object
+      required: [passengerLat, passengerLng, destLat, destLng]
+      properties:
+        passengerLat:
+          type: number
+        passengerLng:
+          type: number
+        destLat:
+          type: number
+        destLng:
+          type: number
+        maxResults:
+          type: integer
+
+    MatchResult:
+      type: object
+      required: [trip, driverProfile, vehicle, estimatedFare, deviationKm, matchScore]
+      properties:
+        trip:
+          $ref: "#/components/schemas/Trip"
+        driverProfile:
+          $ref: "#/components/schemas/DriverProfile"
+        vehicle:
+          $ref: "#/components/schemas/Vehicle"
+        estimatedFare:
+          type: number
+        deviationKm:
+          type: number
+        matchScore:
+          type: number
+        etaMinutes:
+          type: integer
+
+    MatchResultList:
+      type: object
+      required: [matches]
+      properties:
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchResult"
+
+    AdminLog:
+      type: object
+      required: [id, adminId, action, entityType, createdAt]
+      properties:
+        id:
+          type: integer
+        adminId:
+          type: integer
+        action:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: ["integer", "null"]
+        details:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminLogList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminLog"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer

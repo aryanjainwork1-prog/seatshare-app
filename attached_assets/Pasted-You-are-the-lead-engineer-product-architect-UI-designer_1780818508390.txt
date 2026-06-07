@@ -1,0 +1,289 @@
+You are the lead engineer, product architect, UI designer, database architect, and DevOps engineer for this project.
+
+Your task is to build a complete production-ready MVP called SeatShare.
+
+SeatShare is a real-time route-based ride-sharing platform where drivers already travelling somewhere can publish available seats and passengers can book those seats if they are travelling in a similar direction.
+
+The goal is to build a fully functional application, not just generate code snippets.
+
+You are responsible for:
+
+- Backend
+- Frontend
+- Database
+- Authentication
+- Matching engine
+- Real-time updates
+- Payments
+- Maps integration
+- Admin dashboard
+- Deployment preparation
+
+Do not ask me for architecture decisions unless absolutely necessary.
+
+Make sensible engineering decisions and continue building until the requested functionality is complete.
+
+========================================================
+PRODUCT OVERVIEW
+========================================================
+
+Passenger flow:
+
+1. Sign up using phone OTP
+2. Set profile
+3. Allow location access
+4. Enter destination
+5. View matching drivers
+6. View fare estimate
+7. Request seat
+8. Wait for driver acceptance
+9. Receive confirmation
+10. Track driver live
+11. Board vehicle using verification code
+12. Track trip progress
+13. Complete trip
+14. Make payment
+15. Rate driver
+16. View trip history
+
+Driver flow:
+
+1. Sign up using phone OTP
+2. Complete profile
+3. Register vehicle
+4. Enter destination
+5. Choose available seats
+6. Set maximum route deviation tolerance
+7. Go online
+8. Receive ride requests
+9. Accept or reject requests
+10. Navigate to passenger
+11. Verify passenger boarding
+12. Start trip
+13. Complete trip
+14. Receive payout
+15. View earnings history
+
+Admin flow:
+
+1. View active trips
+2. View users
+3. View drivers
+4. View bookings
+5. Suspend accounts
+6. Review reports
+7. Review support tickets
+8. Monitor platform activity
+
+========================================================
+TECH STACK
+========================================================
+
+Frontend:
+- React Native
+- Expo
+- TypeScript
+- React Query
+- Zustand
+- React Navigation
+
+Backend:
+- Node.js
+- Fastify
+- TypeScript
+
+Database:
+- PostgreSQL
+- Prisma ORM
+
+Realtime:
+- WebSockets
+
+Maps:
+- Google Maps API
+- Google Places API
+
+Payments:
+- Razorpay
+
+Authentication:
+- OTP based login
+- JWT access tokens
+- Refresh tokens
+
+Storage:
+- Cloudinary or equivalent
+
+========================================================
+DATABASE
+========================================================
+
+Create complete schemas for:
+
+Users
+DriverProfiles
+Vehicles
+Trips
+Bookings
+Payments
+Ratings
+SupportTickets
+Notifications
+AdminLogs
+
+Use Prisma.
+
+Generate migrations.
+
+Create seed data.
+
+========================================================
+MATCHING ENGINE
+========================================================
+
+Implement route-based matching.
+
+Consider:
+
+- Passenger location
+- Passenger destination
+- Driver current location
+- Driver destination
+- Available seats
+- Maximum deviation
+- Route similarity
+
+Return ranked matches.
+
+========================================================
+REALTIME SYSTEM
+========================================================
+
+Implement WebSocket support for:
+
+- Driver location updates
+- Booking requests
+- Booking acceptance
+- Booking rejection
+- Trip start
+- Trip completion
+- ETA updates
+
+========================================================
+PASSENGER SCREENS
+========================================================
+
+Build:
+
+- Splash
+- Login
+- OTP Verification
+- Profile Setup
+- Home Map
+- Destination Search
+- Match Results
+- Ride Preview
+- Booking Pending
+- Booking Confirmed
+- Live Tracking
+- Boarding Code
+- Payment
+- Rating
+- Trip History
+- Profile
+- Support
+
+========================================================
+DRIVER SCREENS
+========================================================
+
+Build:
+
+- Login
+- OTP Verification
+- Profile Setup
+- Vehicle Registration
+- Driver Home
+- Route Setup
+- Incoming Requests
+- Active Trip
+- Earnings
+- Trip History
+- Profile
+- Support
+
+========================================================
+ADMIN DASHBOARD
+========================================================
+
+Build a web dashboard with:
+
+- Active trips
+- Active drivers
+- User management
+- Booking management
+- Reports
+- Support tickets
+
+========================================================
+UI REQUIREMENTS
+========================================================
+
+Design should look modern and premium.
+
+Use:
+
+- Dark theme
+- Smooth animations
+- Uber-inspired UX
+- Clean cards
+- Map-first experience
+
+Prioritize mobile usability.
+
+========================================================
+PROJECT STRUCTURE
+========================================================
+
+Create a clean production-grade folder structure.
+
+Separate:
+
+- Components
+- Screens
+- Services
+- Hooks
+- State
+- API
+- Database
+- Routes
+- Utilities
+
+========================================================
+BUILD STRATEGY
+========================================================
+
+Do NOT stop after generating plans.
+
+Actually create:
+
+- Database
+- Backend
+- APIs
+- Frontend screens
+- Navigation
+- State management
+- Matching logic
+- WebSocket system
+
+Continue implementing feature by feature.
+
+After finishing each feature:
+
+1. Verify it works.
+2. Fix errors.
+3. Continue to next feature.
+
+Do not repeatedly ask for confirmation.
+
+Act as the engineering team and keep building until the complete MVP is implemented.
