@@ -1,0 +1,267 @@
+You are continuing an existing SeatShare codebase that is already partially built, but the current draft is too admin-heavy and missing proper role switching and authentication flows.
+
+Your task is to refactor and expand the app so it supports multiple modes cleanly:
+
+1. Passenger mode
+2. Driver mode
+3. Admin mode
+
+The app must support logging out and switching accounts/modes without breaking session state.
+
+Use the existing codebase as the starting point. Do not rebuild everything from scratch unless a file is unusable. Preserve working parts and refactor only what is necessary.
+
+---
+
+## CORE PRODUCT RULES
+
+SeatShare is a route-based ride-sharing app.
+
+A user can:
+
+* sign up
+* log in with email or phone
+* switch between passenger and driver modes if their account supports it
+* log out
+* sign in as an admin only if they use a verified work email and password
+
+Admins must be separated from normal users by role-based access control. Admin features must never be visible to normal passengers or drivers.
+
+---
+
+## AUTHENTICATION REQUIREMENTS
+
+Implement all of the following:
+
+### Login methods
+
+* Phone OTP login
+* Google login
+* Apple ID login
+* Email/password login for admin accounts only
+
+### Sign-up
+
+* Passenger sign-up
+* Driver sign-up
+* Admin accounts are not self-created in the public app; they are only activated by approved work email credentials
+
+### Session and account switching
+
+* Full logout
+* Switch account
+* Switch between passenger and driver mode inside the same account when allowed
+* If a user is not a driver, do not show driver mode
+* If a user is not an admin, do not show admin mode
+
+### Role safety
+
+* Add protected routes and UI guards
+* Add role-aware navigation
+* Prevent users from accessing screens for roles they do not have
+* Persist the last active mode after refresh/login
+
+---
+
+## MODES
+
+Add a clear mode system in the app header or profile area.
+
+Modes:
+
+* Passenger
+* Driver
+* Admin
+
+Behavior:
+
+* Passenger and driver modes can be switched if the user has both roles enabled.
+* Admin mode is only available after login with work email and password.
+* Admin mode should never appear in normal user onboarding or public login flows.
+
+---
+
+## ADMIN MAP REQUIREMENTS
+
+Build a live admin map that shows all active rides, drivers, and customers in real time.
+
+The map must support:
+
+### Live visibility
+
+* show all online drivers
+* show all active customers/passengers
+* show all live rides
+* show current status for each entity
+* update positions instantly as locations change
+
+### Filtering and sorting
+
+* filter by ride status
+* filter by driver status
+* filter by customer status
+* filter by city/zone/area if available
+* sort by recency, distance, trip status, or risk/status flags
+* search by user name, ride ID, driver ID, booking ID, or phone
+
+### Zoom behavior
+
+When zoomed in:
+
+* show only entities inside the visible map bounds
+* automatically update the side panels to show only the rides and users in that area
+* show detailed cards in the left and right panels
+
+When zoomed out:
+
+* show a broader overview of all visible drivers and customers
+* group or cluster entities if needed for performance
+* make all drivers and customers visible in their own tabs or lists
+* clicking an item opens a detailed drawer or panel
+
+### Panel layout
+
+Use two separate panels:
+
+* Left panel: drivers
+* Right panel: customers/passengers
+
+Each panel should show:
+
+* name
+* status
+* current location
+* active trip or booking
+* last update time
+* quick actions
+* click to open detailed view
+
+### Map interaction
+
+* clicking a marker opens details
+* clicking a list item focuses the map on that entity
+* zooming changes what appears in the side panels
+* map state and panel state must stay synchronized
+
+---
+
+## DATA AND REAL-TIME REQUIREMENTS
+
+Use live location updates for:
+
+* drivers
+* active rides
+* customers on a ride
+
+The admin map should subscribe to realtime updates so the map does not need manual refresh.
+
+Track and display:
+
+* location
+* trip status
+* booking status
+* online/offline status
+* live ETA if available
+* active route if available
+
+---
+
+## ADMIN TOOLS
+
+Add admin-only capabilities:
+
+* view all users
+* view all drivers
+* view all rides
+* suspend or restore accounts
+* view route history
+* inspect trip details
+* inspect booking details
+* see recent activity logs
+
+Add audit logging for admin actions.
+
+---
+
+## USER EXPERIENCE REQUIREMENTS
+
+Improve the app so the mode switching is obvious and clean.
+
+Add:
+
+* login screen with role-aware options
+* mode switch UI
+* logout button
+* profile menu with current role
+* admin-only navigation sections
+* loading states
+* error handling
+* empty states
+* permission denied states
+
+---
+
+## TECHNICAL REQUIREMENTS
+
+Keep the existing stack unless a change is absolutely necessary.
+
+Use:
+
+* React Native for mobile
+* TypeScript
+* the current backend stack already in the project
+* role-based guards
+* reusable components
+* clean state management
+
+If the project already has a backend, extend it instead of replacing it.
+
+---
+
+## IMPORTANT IMPROVEMENTS TO ADD
+
+Also add these if they are missing:
+
+* account recovery / forgot password for admin email login
+* refresh token handling
+* secure logout that clears tokens and role state
+* session persistence across app restarts
+* consistent mode selection on app launch
+* admin-only analytics summary on the dashboard
+* map clustering or grouping for large data sets
+* focused search for live entities
+* detail drawer or bottom sheet on marker click
+* ability to toggle between map view and list view in admin mode
+
+---
+
+## BUILD ORDER
+
+Work in this order:
+
+1. Fix authentication and session handling
+2. Add role-based access and mode switching
+3. Add admin-only login and route protection
+4. Build admin map with live updates
+5. Add filtering, sorting, search, and zoom-aware panels
+6. Refactor navigation and UI for the three modes
+7. Clean up bugs and verify logout/account switching works end-to-end
+
+---
+
+## WHAT I WANT YOU TO OUTPUT
+
+Deliver:
+
+* updated architecture decisions
+* file changes needed
+* any new components, screens, hooks, and services
+* any backend changes required
+* any database changes required
+* the updated auth and role flow
+* the updated admin map design
+* the final implementation plan
+* actual code changes, not just explanation
+
+Do not give vague advice. Make the app work.
+
+Start by auditing the current codebase, then implement the missing authentication, role switching, and admin map system.
