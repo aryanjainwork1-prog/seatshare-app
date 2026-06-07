@@ -22,6 +22,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 import { BANGALORE_AREAS } from "@/constants/locations";
+import { MapPickerModal } from "@/components/MapPickerModal";
+import type { PickedLocation } from "@/components/MapPickerModal";
 
 const DEFAULT_ORIGIN_LAT = 12.9716;
 const DEFAULT_ORIGIN_LNG = 77.5946;
@@ -35,6 +37,8 @@ function LocationInput({
   icon,
   iconColor,
   colors,
+  onMapPress,
+  hasPinnedCoords,
 }: {
   value: string;
   onChangeText: (t: string) => void;
@@ -42,18 +46,34 @@ function LocationInput({
   icon: "circle" | "map-pin";
   iconColor: string;
   colors: ReturnType<typeof useColors>;
+  onMapPress?: () => void;
+  hasPinnedCoords?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
-  const suggestions = value.trim().length >= 2
-    ? BANGALORE_AREAS.filter((a) => a.toLowerCase().includes(value.toLowerCase())).slice(0, 4)
-    : [];
+  const suggestions =
+    value.trim().length >= 2
+      ? BANGALORE_AREAS.filter((a) =>
+          a.toLowerCase().includes(value.toLowerCase()),
+        ).slice(0, 4)
+      : [];
 
   return (
     <View>
-      <View style={[styles.searchInput, { backgroundColor: colors.card, borderColor: focused ? colors.primary : colors.border }]}>
+      <View
+        style={[
+          styles.searchInput,
+          {
+            backgroundColor: colors.card,
+            borderColor: focused ? colors.primary : colors.border,
+          },
+        ]}
+      >
         <Feather name={icon} size={14} color={iconColor} />
         <TextInput
-          style={[styles.searchText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+          style={[
+            styles.searchText,
+            { color: colors.foreground, fontFamily: "Inter_400Regular" },
+          ]}
           placeholder={placeholder}
           placeholderTextColor={colors.mutedForeground}
           value={value}
@@ -61,22 +81,68 @@ function LocationInput({
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 150)}
         />
+        {hasPinnedCoords && (
+          <View
+            style={[
+              styles.pinnedBadge,
+              { backgroundColor: `${iconColor}22` },
+            ]}
+          >
+            <Feather name="check" size={10} color={iconColor} />
+          </View>
+        )}
         {value.length > 0 && (
           <Pressable onPress={() => onChangeText("")}>
             <Feather name="x" size={14} color={colors.mutedForeground} />
           </Pressable>
         )}
+        {onMapPress && Platform.OS !== "web" && (
+          <Pressable
+            onPress={onMapPress}
+            hitSlop={8}
+            style={[
+              styles.mapBtn,
+              {
+                backgroundColor: hasPinnedCoords
+                  ? `${iconColor}22`
+                  : `${colors.mutedForeground}18`,
+              },
+            ]}
+          >
+            <Feather
+              name="map"
+              size={14}
+              color={hasPinnedCoords ? iconColor : colors.mutedForeground}
+            />
+          </Pressable>
+        )}
       </View>
       {focused && suggestions.length > 0 && (
-        <View style={[styles.suggestions, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.suggestions,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
           {suggestions.map((s) => (
             <Pressable
               key={s}
-              style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
-              onPress={() => { onChangeText(s); setFocused(false); }}
+              style={[
+                styles.suggestionItem,
+                { borderBottomColor: colors.border },
+              ]}
+              onPress={() => {
+                onChangeText(s);
+                setFocused(false);
+              }}
             >
               <Feather name="map-pin" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.suggestionText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
+              <Text
+                style={[
+                  styles.suggestionText,
+                  { color: colors.foreground, fontFamily: "Inter_400Regular" },
+                ]}
+              >
                 {s}
               </Text>
             </Pressable>
@@ -96,6 +162,14 @@ export default function FindRidesScreen() {
 
   const [fromText, setFromText] = useState("");
   const [toText, setToText] = useState("");
+  const [fromCoords, setFromCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [toCoords, setToCoords] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
+  const [mapPicker, setMapPicker] = useState<null | "from" | "to">(null);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [emailBanner, setEmailBanner] = useState<"pending" | null>(null);
@@ -109,7 +183,10 @@ export default function FindRidesScreen() {
     AsyncStorage.getItem("seatshare_onboarding_prefs").then((raw) => {
       if (!raw) return;
       try {
-        const prefs = JSON.parse(raw) as { homeArea?: string; destination?: string };
+        const prefs = JSON.parse(raw) as {
+          homeArea?: string;
+          destination?: string;
+        };
         if (prefs.homeArea) setFromText(prefs.homeArea);
         if (prefs.destination) setToText(prefs.destination);
       } catch {
@@ -123,12 +200,35 @@ export default function FindRidesScreen() {
     setEmailBanner(null);
   }
 
+  function handleFromTextChange(t: string) {
+    setFromText(t);
+    setFromCoords(null);
+  }
+
+  function handleToTextChange(t: string) {
+    setToText(t);
+    setToCoords(null);
+  }
+
+  function handleMapConfirm(picked: PickedLocation) {
+    if (mapPicker === "from") {
+      setFromText(picked.address);
+      setFromCoords({ lat: picked.lat, lng: picked.lng });
+    } else if (mapPicker === "to") {
+      setToText(picked.address);
+      setToCoords({ lat: picked.lat, lng: picked.lng });
+    }
+    setMapPicker(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+
   async function resolveCoords(
     text: string,
     fallbackLat: number,
     fallbackLng: number,
   ): Promise<{ lat: number; lng: number }> {
-    if (!text.trim() || Platform.OS === "web") return { lat: fallbackLat, lng: fallbackLng };
+    if (!text.trim() || Platform.OS === "web")
+      return { lat: fallbackLat, lng: fallbackLng };
     try {
       const results = await Location.geocodeAsync(text.trim());
       if (results.length > 0) {
@@ -146,16 +246,25 @@ export default function FindRidesScreen() {
     let pLat = DEFAULT_ORIGIN_LAT;
     let pLng = DEFAULT_ORIGIN_LNG;
 
-    if (Platform.OS !== "web") {
+    if (fromCoords) {
+      pLat = fromCoords.lat;
+      pLng = fromCoords.lng;
+    } else if (Platform.OS !== "web") {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
         if (fromText.trim()) {
-          const resolved = await resolveCoords(fromText, DEFAULT_ORIGIN_LAT, DEFAULT_ORIGIN_LNG);
+          const resolved = await resolveCoords(
+            fromText,
+            DEFAULT_ORIGIN_LAT,
+            DEFAULT_ORIGIN_LNG,
+          );
           pLat = resolved.lat;
           pLng = resolved.lng;
         } else {
           try {
-            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const pos = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
             pLat = pos.coords.latitude;
             pLng = pos.coords.longitude;
           } catch {
@@ -166,22 +275,40 @@ export default function FindRidesScreen() {
     } else {
       await new Promise<void>((resolve) => {
         navigator.geolocation.getCurrentPosition(
-          (pos) => { pLat = pos.coords.latitude; pLng = pos.coords.longitude; resolve(); },
+          (pos) => {
+            pLat = pos.coords.latitude;
+            pLng = pos.coords.longitude;
+            resolve();
+          },
           () => resolve(),
           { timeout: 5000 },
         );
       });
     }
 
-    const destResolved = await resolveCoords(toText, DEFAULT_DEST_LAT, DEFAULT_DEST_LNG);
+    let dLat = DEFAULT_DEST_LAT;
+    let dLng = DEFAULT_DEST_LNG;
+
+    if (toCoords) {
+      dLat = toCoords.lat;
+      dLng = toCoords.lng;
+    } else {
+      const destResolved = await resolveCoords(
+        toText,
+        DEFAULT_DEST_LAT,
+        DEFAULT_DEST_LNG,
+      );
+      dLat = destResolved.lat;
+      dLng = destResolved.lng;
+    }
 
     try {
       const result = await matchMutation.mutateAsync({
         data: {
           passengerLat: pLat,
           passengerLng: pLng,
-          destLat: destResolved.lat,
-          destLng: destResolved.lng,
+          destLat: dLat,
+          destLng: dLng,
           maxResults: 40,
         },
       });
@@ -197,40 +324,85 @@ export default function FindRidesScreen() {
     const driver = item.driverProfile?.user;
     const vehicle = item.vehicle;
     const driverName = driver?.name ?? "Driver";
-    const initials = driverName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+    const initials = driverName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
 
     return (
       <Pressable
         style={({ pressed }) => [
           styles.card,
-          { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.9 : 1 },
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            opacity: pressed ? 0.9 : 1,
+          },
         ]}
         onPress={() => {
           Haptics.selectionAsync();
-          router.push({ pathname: "/trip/[id]", params: { id: String(item.trip.id) } });
+          router.push({
+            pathname: "/trip/[id]",
+            params: { id: String(item.trip.id) },
+          });
         }}
       >
         <View style={styles.cardTop}>
-          <View style={[styles.avatar, { backgroundColor: `${colors.primary}33` }]}>
-            <Text style={[styles.avatarText, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+          <View
+            style={[styles.avatar, { backgroundColor: `${colors.primary}33` }]}
+          >
+            <Text
+              style={[
+                styles.avatarText,
+                { color: colors.primary, fontFamily: "Inter_600SemiBold" },
+              ]}
+            >
               {initials}
             </Text>
           </View>
           <View style={styles.cardInfo}>
-            <Text style={[styles.driverName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            <Text
+              style={[
+                styles.driverName,
+                { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+              ]}
+            >
               {driverName}
             </Text>
             {vehicle && (
-              <Text style={[styles.vehicleText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              <Text
+                style={[
+                  styles.vehicleText,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_400Regular",
+                  },
+                ]}
+              >
                 {vehicle.color} {vehicle.make} {vehicle.model}
               </Text>
             )}
           </View>
           <View style={styles.fareBox}>
-            <Text style={[styles.fareAmount, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+            <Text
+              style={[
+                styles.fareAmount,
+                { color: colors.primary, fontFamily: "Inter_700Bold" },
+              ]}
+            >
               ₹{item.estimatedFare.toFixed(0)}
             </Text>
-            <Text style={[styles.fareLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            <Text
+              style={[
+                styles.fareLabel,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_400Regular",
+                },
+              ]}
+            >
               /seat
             </Text>
           </View>
@@ -241,21 +413,45 @@ export default function FindRidesScreen() {
         <View style={styles.cardMeta}>
           <View style={styles.metaItem}>
             <Feather name="map-pin" size={13} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            <Text
+              style={[
+                styles.metaText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_400Regular",
+                },
+              ]}
+            >
               {item.deviationKm.toFixed(1)} km detour
             </Text>
           </View>
           {item.etaMinutes !== undefined && (
             <View style={styles.metaItem}>
               <Feather name="clock" size={13} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              <Text
+                style={[
+                  styles.metaText,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_400Regular",
+                  },
+                ]}
+              >
                 {item.etaMinutes} min
               </Text>
             </View>
           )}
           <View style={styles.metaItem}>
             <Ionicons name="people" size={13} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            <Text
+              style={[
+                styles.metaText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_400Regular",
+                },
+              ]}
+            >
               {item.trip.availableSeats} seats
             </Text>
           </View>
@@ -263,15 +459,40 @@ export default function FindRidesScreen() {
 
         <View style={styles.routeRow}>
           <View style={styles.routePoint}>
-            <View style={[styles.routeDot, styles.routeDotFrom, { borderColor: colors.success }]} />
-            <Text style={[styles.routeText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]} numberOfLines={1}>
+            <View
+              style={[
+                styles.routeDot,
+                styles.routeDotFrom,
+                { borderColor: colors.success },
+              ]}
+            />
+            <Text
+              style={[
+                styles.routeText,
+                { color: colors.foreground, fontFamily: "Inter_400Regular" },
+              ]}
+              numberOfLines={1}
+            >
               {item.trip.originAddress}
             </Text>
           </View>
-          <View style={[styles.routeLine, { backgroundColor: colors.border }]} />
+          <View
+            style={[styles.routeLine, { backgroundColor: colors.border }]}
+          />
           <View style={styles.routePoint}>
-            <View style={[styles.routeDot, { backgroundColor: colors.destructive }]} />
-            <Text style={[styles.routeText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]} numberOfLines={1}>
+            <View
+              style={[
+                styles.routeDot,
+                { backgroundColor: colors.destructive },
+              ]}
+            />
+            <Text
+              style={[
+                styles.routeText,
+                { color: colors.foreground, fontFamily: "Inter_400Regular" },
+              ]}
+              numberOfLines={1}
+            >
               {item.trip.destAddress}
             </Text>
           </View>
@@ -285,9 +506,22 @@ export default function FindRidesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {emailBanner === "pending" && (
-        <View style={[styles.banner, { backgroundColor: `${colors.primary}18`, borderBottomColor: `${colors.primary}33` }]}>
+        <View
+          style={[
+            styles.banner,
+            {
+              backgroundColor: `${colors.primary}18`,
+              borderBottomColor: `${colors.primary}33`,
+            },
+          ]}
+        >
           <Feather name="mail" size={14} color={colors.primary} />
-          <Text style={[styles.bannerText, { color: colors.primary, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            style={[
+              styles.bannerText,
+              { color: colors.primary, fontFamily: "Inter_400Regular" },
+            ]}
+          >
             Verify your email to unlock all features
           </Text>
           <Pressable onPress={dismissEmailBanner}>
@@ -297,40 +531,92 @@ export default function FindRidesScreen() {
       )}
 
       {isDriver && (
-        <View style={[styles.modeSwitcher, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <View
+          style={[
+            styles.modeSwitcher,
+            {
+              backgroundColor: colors.card,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           <Pressable
             style={[
               styles.modeBtn,
-              mode === "passenger" && { backgroundColor: colors.primary, borderRadius: 8 },
-            ]}
-            onPress={() => { setMode("passenger"); Haptics.selectionAsync(); }}
-          >
-            <Feather name="users" size={14} color={mode === "passenger" ? colors.primaryForeground : colors.mutedForeground} />
-            <Text style={[
-              styles.modeBtnText,
-              {
-                color: mode === "passenger" ? colors.primaryForeground : colors.mutedForeground,
-                fontFamily: mode === "passenger" ? "Inter_600SemiBold" : "Inter_400Regular",
+              mode === "passenger" && {
+                backgroundColor: colors.primary,
+                borderRadius: 8,
               },
-            ]}>
+            ]}
+            onPress={() => {
+              setMode("passenger");
+              Haptics.selectionAsync();
+            }}
+          >
+            <Feather
+              name="users"
+              size={14}
+              color={
+                mode === "passenger"
+                  ? colors.primaryForeground
+                  : colors.mutedForeground
+              }
+            />
+            <Text
+              style={[
+                styles.modeBtnText,
+                {
+                  color:
+                    mode === "passenger"
+                      ? colors.primaryForeground
+                      : colors.mutedForeground,
+                  fontFamily:
+                    mode === "passenger"
+                      ? "Inter_600SemiBold"
+                      : "Inter_400Regular",
+                },
+              ]}
+            >
               Passenger
             </Text>
           </Pressable>
           <Pressable
             style={[
               styles.modeBtn,
-              mode === "driver" && { backgroundColor: colors.primary, borderRadius: 8 },
-            ]}
-            onPress={() => { setMode("driver"); Haptics.selectionAsync(); }}
-          >
-            <Feather name="truck" size={14} color={mode === "driver" ? colors.primaryForeground : colors.mutedForeground} />
-            <Text style={[
-              styles.modeBtnText,
-              {
-                color: mode === "driver" ? colors.primaryForeground : colors.mutedForeground,
-                fontFamily: mode === "driver" ? "Inter_600SemiBold" : "Inter_400Regular",
+              mode === "driver" && {
+                backgroundColor: colors.primary,
+                borderRadius: 8,
               },
-            ]}>
+            ]}
+            onPress={() => {
+              setMode("driver");
+              Haptics.selectionAsync();
+            }}
+          >
+            <Feather
+              name="truck"
+              size={14}
+              color={
+                mode === "driver"
+                  ? colors.primaryForeground
+                  : colors.mutedForeground
+              }
+            />
+            <Text
+              style={[
+                styles.modeBtnText,
+                {
+                  color:
+                    mode === "driver"
+                      ? colors.primaryForeground
+                      : colors.mutedForeground,
+                  fontFamily:
+                    mode === "driver"
+                      ? "Inter_600SemiBold"
+                      : "Inter_400Regular",
+                },
+              ]}
+            >
               Driver
             </Text>
           </Pressable>
@@ -338,67 +624,138 @@ export default function FindRidesScreen() {
       )}
 
       {mode === "driver" ? (
-        <View style={[styles.driverModeView, { paddingTop: isDriver ? 0 : topPad + 8 }]}>
-          <View style={[styles.driverModeCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 16 }]}>
-            <View style={[styles.driverModeIcon, { backgroundColor: `${colors.primary}22` }]}>
+        <View
+          style={[
+            styles.driverModeView,
+            { paddingTop: isDriver ? 0 : topPad + 8 },
+          ]}
+        >
+          <View
+            style={[
+              styles.driverModeCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                marginTop: 16,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.driverModeIcon,
+                { backgroundColor: `${colors.primary}22` },
+              ]}
+            >
               <Feather name="truck" size={28} color={colors.primary} />
             </View>
-            <Text style={[styles.driverModeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+            <Text
+              style={[
+                styles.driverModeTitle,
+                { color: colors.foreground, fontFamily: "Inter_700Bold" },
+              ]}
+            >
               You're in Driver Mode
             </Text>
-            <Text style={[styles.driverModeSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              Manage your trips, go online, and accept bookings from the Drive tab.
+            <Text
+              style={[
+                styles.driverModeSub,
+                { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+              ]}
+            >
+              Manage your trips, go online, and accept bookings from the Drive
+              tab.
             </Text>
             <Pressable
               style={[styles.driverModeBtn, { backgroundColor: colors.primary }]}
               onPress={() => router.push("/(tabs)/driver")}
             >
               <Feather name="zap" size={16} color={colors.primaryForeground} />
-              <Text style={[styles.driverModeBtnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
+              <Text
+                style={[
+                  styles.driverModeBtnText,
+                  {
+                    color: colors.primaryForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
                 Open Driver Dashboard
               </Text>
             </Pressable>
           </View>
           <Pressable
             style={styles.switchToPassenger}
-            onPress={() => { setMode("passenger"); Haptics.selectionAsync(); }}
+            onPress={() => {
+              setMode("passenger");
+              Haptics.selectionAsync();
+            }}
           >
-            <Text style={[styles.switchToPassengerText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            <Text
+              style={[
+                styles.switchToPassengerText,
+                { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+              ]}
+            >
               Looking for a ride instead?{" "}
-              <Text style={{ color: colors.primary, fontFamily: "Inter_500Medium" }}>Switch to Passenger</Text>
+              <Text
+                style={{ color: colors.primary, fontFamily: "Inter_500Medium" }}
+              >
+                Switch to Passenger
+              </Text>
             </Text>
           </Pressable>
         </View>
       ) : (
         <>
-          <View style={[styles.searchHeader, { paddingTop: isDriver ? 12 : topPad + 8, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-            <Text style={[styles.screenTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+          <View
+            style={[
+              styles.searchHeader,
+              {
+                paddingTop: isDriver ? 12 : topPad + 8,
+                backgroundColor: colors.background,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.screenTitle,
+                { color: colors.foreground, fontFamily: "Inter_700Bold" },
+              ]}
+            >
               Find a Ride
             </Text>
 
             <LocationInput
               value={fromText}
-              onChangeText={setFromText}
+              onChangeText={handleFromTextChange}
               placeholder="From — your current location"
               icon="circle"
               iconColor={colors.success}
               colors={colors}
+              hasPinnedCoords={!!fromCoords}
+              onMapPress={() => setMapPicker("from")}
             />
 
             <LocationInput
               value={toText}
-              onChangeText={setToText}
+              onChangeText={handleToTextChange}
               placeholder="To — destination"
               icon="map-pin"
               iconColor={colors.destructive}
               colors={colors}
+              hasPinnedCoords={!!toCoords}
+              onMapPress={() => setMapPicker("to")}
             />
 
             <Pressable
               testID="find-rides-btn"
               style={({ pressed }) => [
                 styles.searchBtn,
-                { backgroundColor: colors.primary, opacity: pressed || matchMutation.isPending ? 0.8 : 1 },
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed || matchMutation.isPending ? 0.8 : 1,
+                },
               ]}
               onPress={handleSearch}
               disabled={matchMutation.isPending}
@@ -407,8 +764,20 @@ export default function FindRidesScreen() {
                 <ActivityIndicator color={colors.primaryForeground} />
               ) : (
                 <>
-                  <Feather name="search" size={16} color={colors.primaryForeground} />
-                  <Text style={[styles.searchBtnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Feather
+                    name="search"
+                    size={16}
+                    color={colors.primaryForeground}
+                  />
+                  <Text
+                    style={[
+                      styles.searchBtnText,
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     Find Rides
                   </Text>
                 </>
@@ -427,21 +796,61 @@ export default function FindRidesScreen() {
               <View style={styles.emptyState}>
                 {hasSearched ? (
                   <>
-                    <Feather name="search" size={40} color={colors.mutedForeground} />
-                    <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    <Feather
+                      name="search"
+                      size={40}
+                      color={colors.mutedForeground}
+                    />
+                    <Text
+                      style={[
+                        styles.emptyTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
                       No rides found
                     </Text>
-                    <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    <Text
+                      style={[
+                        styles.emptyText,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
+                    >
                       Try a different time or destination
                     </Text>
                   </>
                 ) : (
                   <>
-                    <Feather name="navigation" size={40} color={colors.mutedForeground} />
-                    <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    <Feather
+                      name="navigation"
+                      size={40}
+                      color={colors.mutedForeground}
+                    />
+                    <Text
+                      style={[
+                        styles.emptyTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
                       Where are you headed?
                     </Text>
-                    <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    <Text
+                      style={[
+                        styles.emptyText,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_400Regular",
+                        },
+                      ]}
+                    >
                       Enter your destination and find shared rides
                     </Text>
                   </>
@@ -450,6 +859,26 @@ export default function FindRidesScreen() {
             }
           />
         </>
+      )}
+
+      {mapPicker !== null && (
+        <MapPickerModal
+          visible
+          title={mapPicker === "from" ? "Set Pickup Location" : "Set Drop-off Location"}
+          pinColor={mapPicker === "from" ? colors.success : colors.destructive}
+          initialLat={
+            mapPicker === "from"
+              ? (fromCoords?.lat ?? DEFAULT_ORIGIN_LAT)
+              : (toCoords?.lat ?? DEFAULT_DEST_LAT)
+          }
+          initialLng={
+            mapPicker === "from"
+              ? (fromCoords?.lng ?? DEFAULT_ORIGIN_LNG)
+              : (toCoords?.lng ?? DEFAULT_DEST_LNG)
+          }
+          onClose={() => setMapPicker(null)}
+          onConfirm={handleMapConfirm}
+        />
       )}
     </View>
   );
@@ -542,6 +971,20 @@ const styles = StyleSheet.create({
   searchText: {
     flex: 1,
     fontSize: 15,
+  },
+  pinnedBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mapBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   suggestions: {
     borderRadius: 10,
