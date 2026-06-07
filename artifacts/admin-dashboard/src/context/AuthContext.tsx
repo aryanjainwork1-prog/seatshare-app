@@ -23,8 +23,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Only pre-populate user if a token also exists — prevents stale user
+  // bypass when the token has been removed but the user key is still set.
   const [user, setUser] = useState<User | null>(() => {
     try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
       const raw = localStorage.getItem(USER_KEY);
       return raw ? (JSON.parse(raw) as User) : null;
     } catch {
@@ -42,10 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setAuthTokenGetter(null);
   }, []);
 
-  // Validate the stored token on mount by hitting /api/auth/me
+  // Validate the stored token on mount
   useEffect(() => {
     const storedToken = localStorage.getItem(TOKEN_KEY);
     if (!storedToken) {
+      // No token — ensure user state is cleared and stop loading
+      localStorage.removeItem(USER_KEY);
+      setUser(null);
+      setToken(null);
       setIsLoading(false);
       return;
     }
