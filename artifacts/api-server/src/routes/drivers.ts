@@ -68,6 +68,20 @@ router.patch("/driver-profiles/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Fetch existing profile to verify ownership before mutating
+  const [existing] = await db.select().from(driverProfilesTable).where(eq(driverProfilesTable.id, id));
+  if (!existing) {
+    res.status(404).json({ error: "Driver profile not found" });
+    return;
+  }
+
+  // Only the profile owner (driver) or an admin may update
+  const caller = req.user!;
+  if (caller.role !== "admin" && existing.userId !== caller.sub) {
+    res.status(403).json({ error: "Forbidden: you may only update your own driver profile" });
+    return;
+  }
+
   const [profile] = await db.update(driverProfilesTable).set(parsed.data).where(eq(driverProfilesTable.id, id)).returning();
   if (!profile) {
     res.status(404).json({ error: "Driver profile not found" });
