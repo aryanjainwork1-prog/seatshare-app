@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { requireAuth, requireRole } from "../middleware/auth";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import usersRouter from "./users";
@@ -15,18 +16,26 @@ import adminLogsRouter from "./admin-logs";
 
 const router: IRouter = Router();
 
+// Public routes — no auth required
 router.use(healthRouter);
 router.use(authRouter);
-router.use(usersRouter);
-router.use(driversRouter);
-router.use(vehiclesRouter);
+
+// Authenticated routes — valid JWT required
+router.use(requireAuth);
+
+// Mixed-role routes (passenger + driver + admin can access)
 router.use(tripsRouter);
 router.use(bookingsRouter);
 router.use(paymentsRouter);
 router.use(ratingsRouter);
-router.use(supportRouter);
-router.use(statsRouter);
-router.use(matchRouter);
-router.use(adminLogsRouter);
+router.use(vehiclesRouter);
+
+// Admin-only routes
+router.use(requireRole("admin"), usersRouter);
+router.use(requireRole("admin"), driversRouter);
+router.use(requireRole("admin"), statsRouter);
+router.use(requireRole("admin"), adminLogsRouter);
+router.use(requireRole("admin"), supportRouter);
+router.use(requireRole("admin"), matchRouter);
 
 export default router;

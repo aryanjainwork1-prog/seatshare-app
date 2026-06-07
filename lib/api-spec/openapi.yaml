@@ -74,6 +74,76 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthTokens"
 
+  /auth/admin-login:
+    post:
+      operationId: adminLogin
+      summary: Admin login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+        "401":
+          description: Invalid credentials
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      summary: Request admin password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInput"
+      responses:
+        "200":
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/register-driver:
+    post:
+      operationId: registerDriver
+      summary: Register a new driver account with profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDriverInput"
+      responses:
+        "201":
+          description: Driver registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverRegistrationResult"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      summary: Get current authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
   /users:
     get:
       operationId: listUsers
@@ -840,6 +910,12 @@ paths:
                 $ref: "#/components/schemas/AdminLogList"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -1569,3 +1645,52 @@ components:
           type: integer
         limit:
           type: integer
+
+    AdminLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    ForgotPasswordInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    RegisterDriverInput:
+      type: object
+      required: [phone]
+      properties:
+        phone:
+          type: string
+        name:
+          type: string
+        licenseNumber:
+          type: string
+
+    DriverRegistrationResult:
+      type: object
+      required: [accessToken, refreshToken, user, driverProfile]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        driverProfile:
+          $ref: "#/components/schemas/DriverProfile"
+
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string

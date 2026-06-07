@@ -385,6 +385,32 @@ export interface AdminLogList {
   limit: number;
 }
 
+export interface AdminLoginInput {
+  email: string;
+  password: string;
+}
+
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface RegisterDriverInput {
+  phone: string;
+  name?: string;
+  licenseNumber?: string;
+}
+
+export interface DriverRegistrationResult {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+  driverProfile: DriverProfile;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
 export type ListUsersParams = {
 role?: string;
 status?: string;

@@ -79,6 +79,67 @@ export const RefreshTokenResponse = zod.object({
 
 
 /**
+ * @summary Admin login with email and password
+ */
+export const AdminLoginBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string()
+})
+
+export const AdminLoginResponse = zod.object({
+  "accessToken": zod.string(),
+  "refreshToken": zod.string(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Request admin password reset
+ */
+export const ForgotPasswordBody = zod.object({
+  "email": zod.string().email()
+})
+
+export const ForgotPasswordResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Register a new driver account with profile
+ */
+export const RegisterDriverBody = zod.object({
+  "phone": zod.string(),
+  "name": zod.string().optional(),
+  "licenseNumber": zod.string().optional()
+})
+
+
+/**
+ * @summary Get current authenticated user
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List all users
  */
 export const ListUsersQueryParams = zod.object({
