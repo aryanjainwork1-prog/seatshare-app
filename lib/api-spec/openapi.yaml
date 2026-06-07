@@ -144,6 +144,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  /me/push-token:
+    patch:
+      operationId: registerPushToken
+      summary: Register Expo push notification token for current user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPushTokenInput"
+      responses:
+        "200":
+          description: Token registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
   /users:
     get:
       operationId: listUsers
@@ -1693,6 +1713,13 @@ components:
           $ref: "#/components/schemas/User"
         driverProfile:
           $ref: "#/components/schemas/DriverProfile"
+
+    RegisterPushTokenInput:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
 
     MessageResponse:
       type: object

@@ -408,6 +408,10 @@ export interface DriverRegistrationResult {
   driverProfile: DriverProfile;
 }
 
+export interface RegisterPushTokenInput {
+  token: string;
+}
+
 export interface MessageResponse {
   message: string;
 }

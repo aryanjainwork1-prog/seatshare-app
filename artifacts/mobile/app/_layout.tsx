@@ -18,6 +18,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ModeProvider } from "@/context/ModeContext";
+import { useNotifications } from "@/hooks/useNotifications";
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -32,6 +33,8 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+
+  useNotifications(isAuthenticated);
 
   const topSegment = segments[0] as string | undefined;
 

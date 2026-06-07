@@ -47,6 +47,7 @@ export * from './ratingInput';
 export * from './ratingList';
 export * from './refreshRequest';
 export * from './registerDriverInput';
+export * from './registerPushTokenInput';
 export * from './rejectInput';
 export * from './statsActivity';
 export * from './statsOverview';

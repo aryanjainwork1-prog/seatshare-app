@@ -1,9 +1,10 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type { Server, IncomingMessage } from "http";
 import { and, eq, inArray } from "drizzle-orm";
-import { db, bookingsTable, driverProfilesTable, tripsTable } from "@workspace/db";
+import { db, bookingsTable, driverProfilesTable, tripsTable, usersTable } from "@workspace/db";
 import { logger } from "./logger";
 import { verifyAccessToken } from "./jwt";
+import { sendPushNotification } from "./push";
 
 interface LocationMessage {
   type: "location";
@@ -32,9 +33,94 @@ const passengerClients = new Map<string, Set<WebSocket>>();
 // Reverse map to clean up on disconnect
 const clientDriverSubscription = new Map<WebSocket, string>();
 
+// Tracks bookings that have already received a "driver nearby" notification
+// Key: `${driverUserId}:${bookingId}`, Value: timestamp when notified
+const nearbyNotifiedAt = new Map<string, number>();
+const NEARBY_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+const NEARBY_THRESHOLD_KM = 1.0;
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function extractToken(req: IncomingMessage): string | null {
   const url = new URL(req.url ?? "/", "http://localhost");
   return url.searchParams.get("token");
+}
+
+async function notifyNearbyPassengers(driverUserId: number, lat: number, lng: number): Promise<void> {
+  try {
+    // Find the driver profile
+    const [profile] = await db
+      .select({ id: driverProfilesTable.id })
+      .from(driverProfilesTable)
+      .where(eq(driverProfilesTable.userId, driverUserId))
+      .limit(1);
+
+    if (!profile) return;
+
+    // Find accepted bookings for this driver's active trips
+    const acceptedBookings = await db
+      .select({
+        bookingId: bookingsTable.id,
+        passengerId: bookingsTable.passengerId,
+        pickupLat: bookingsTable.pickupLat,
+        pickupLng: bookingsTable.pickupLng,
+        pickupAddress: bookingsTable.pickupAddress,
+      })
+      .from(bookingsTable)
+      .innerJoin(tripsTable, eq(tripsTable.id, bookingsTable.tripId))
+      .where(
+        and(
+          eq(tripsTable.driverProfileId, profile.id),
+          inArray(bookingsTable.status, ["accepted"]),
+        ),
+      );
+
+    const now = Date.now();
+    // Prune old cooldown entries
+    for (const [key, ts] of nearbyNotifiedAt) {
+      if (now - ts > NEARBY_COOLDOWN_MS) nearbyNotifiedAt.delete(key);
+    }
+
+    for (const booking of acceptedBookings) {
+      if (booking.pickupLat == null || booking.pickupLng == null) continue;
+
+      const distKm = haversineKm(lat, lng, booking.pickupLat, booking.pickupLng);
+      if (distKm > NEARBY_THRESHOLD_KM) continue;
+
+      const dedupKey = `${driverUserId}:${booking.bookingId}`;
+      if (nearbyNotifiedAt.has(dedupKey)) continue;
+
+      nearbyNotifiedAt.set(dedupKey, now);
+
+      // Look up passenger's push token
+      const [passenger] = await db
+        .select({ expoPushToken: usersTable.expoPushToken, name: usersTable.name })
+        .from(usersTable)
+        .where(eq(usersTable.id, booking.passengerId))
+        .limit(1);
+
+      if (passenger?.expoPushToken) {
+        sendPushNotification({
+          to: passenger.expoPushToken,
+          title: "Your driver is nearby! 📍",
+          body: `Your driver is less than ${Math.round(distKm * 1000)} m away from ${booking.pickupAddress}. Get ready!`,
+          data: { screen: "bookings", bookingId: booking.bookingId },
+        }).catch(() => {});
+      }
+    }
+  } catch (err) {
+    logger.warn({ err }, "notifyNearbyPassengers failed");
+  }
 }
 
 export function setupWebSocket(server: Server): void {
@@ -137,18 +223,18 @@ export function setupWebSocket(server: Server): void {
 
         // Send current driver location from DB (authorization already passed above)
         try {
-          const [profile] = await db
+          const [driverProfile] = await db
             .select({ currentLat: driverProfilesTable.currentLat, currentLng: driverProfilesTable.currentLng })
             .from(driverProfilesTable)
             .where(eq(driverProfilesTable.userId, msg.driverUserId))
             .limit(1);
 
-          if (profile?.currentLat != null && profile?.currentLng != null) {
+          if (driverProfile?.currentLat != null && driverProfile?.currentLng != null) {
             ws.send(JSON.stringify({
               type: "driver_location",
               driverUserId: driverUserIdStr,
-              lat: profile.currentLat,
-              lng: profile.currentLng,
+              lat: driverProfile.currentLat,
+              lng: driverProfile.currentLng,
               updatedAt: new Date().toISOString(),
             }));
           }
@@ -208,6 +294,9 @@ export function setupWebSocket(server: Server): void {
             }
           }
         }
+
+        // Send push notification to passengers if driver is nearby their pickup
+        notifyNearbyPassengers(userId, lat, lng).catch(() => {});
       }
     });
 

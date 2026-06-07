@@ -58,6 +58,7 @@ import type {
   RatingList,
   RefreshRequest,
   RegisterDriverInput,
+  RegisterPushTokenInput,
   RejectInput,
   StatsActivity,
   StatsOverview,
@@ -671,6 +672,77 @@ export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Err
 
 
 
+
+export const getRegisterPushTokenUrl = () => {
+
+
+
+
+  return `/api/me/push-token`
+}
+
+/**
+ * @summary Register Expo push notification token for current user
+ */
+export const registerPushToken = async (registerPushTokenInput: RegisterPushTokenInput, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getRegisterPushTokenUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      registerPushTokenInput,)
+  }
+);}
+
+
+
+
+export const getRegisterPushTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<RegisterPushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<RegisterPushTokenInput>}, TContext> => {
+
+const mutationKey = ['registerPushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerPushToken>>, {data: BodyType<RegisterPushTokenInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerPushToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterPushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof registerPushToken>>>
+    export type RegisterPushTokenMutationBody = BodyType<RegisterPushTokenInput>
+    export type RegisterPushTokenMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register Expo push notification token for current user
+ */
+export const useRegisterPushToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<RegisterPushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerPushToken>>,
+        TError,
+        {data: BodyType<RegisterPushTokenInput>},
+        TContext
+      > => {
+      return useMutation(getRegisterPushTokenMutationOptions(options));
+    }
 
 export const getListUsersUrl = (params?: ListUsersParams,) => {
   const normalizedParams = new URLSearchParams();

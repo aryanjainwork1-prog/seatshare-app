@@ -140,6 +140,18 @@ export const GetMeResponse = zod.object({
 
 
 /**
+ * @summary Register Expo push notification token for current user
+ */
+export const RegisterPushTokenBody = zod.object({
+  "token": zod.string()
+})
+
+export const RegisterPushTokenResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
  * @summary List all users
  */
 export const ListUsersQueryParams = zod.object({
