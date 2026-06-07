@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
-import type { Server } from "http";
+import type { Server, IncomingMessage } from "http";
 import { eq } from "drizzle-orm";
 import { db, driverProfilesTable } from "@workspace/db";
 import { logger } from "./logger";
@@ -7,7 +7,6 @@ import { verifyAccessToken } from "./jwt";
 
 interface LocationMessage {
   type: "location";
-  driverId: number;
   lat: number;
   lng: number;
 }
@@ -16,64 +15,76 @@ interface SubscribeMessage {
   type: "subscribe_map";
 }
 
-type IncomingMessage = LocationMessage | SubscribeMessage;
+type IncomingWsMessage = LocationMessage | SubscribeMessage;
 
-// Tracks admin clients subscribed to the map feed
+// Tracks admin clients subscribed to the live driver map feed
 const adminClients = new Set<WebSocket>();
+
+function extractToken(req: IncomingMessage): string | null {
+  const url = new URL(req.url ?? "/", "http://localhost");
+  return url.searchParams.get("token");
+}
 
 export function setupWebSocket(server: Server): void {
   const wss = new WebSocketServer({ server, path: "/ws" });
 
   wss.on("connection", (ws, req) => {
-    const url = new URL(req.url ?? "/", "http://localhost");
-    const token = url.searchParams.get("token");
+    const token = extractToken(req);
+    const payload = token ? verifyAccessToken(token) : null;
 
-    let userId: number | null = null;
-    let userRole: string | null = null;
-
-    if (token) {
-      const payload = verifyAccessToken(token);
-      if (payload) {
-        userId = payload.sub;
-        userRole = payload.role;
-      }
+    // Reject unauthenticated connections immediately
+    if (!payload) {
+      ws.send(JSON.stringify({ type: "error", message: "Authentication required" }));
+      ws.close(1008, "Authentication required");
+      logger.warn("WebSocket connection rejected: no valid token");
+      return;
     }
 
+    const { sub: userId, role: userRole } = payload;
     logger.info({ userId, userRole }, "WebSocket client connected");
 
     ws.on("message", async (raw) => {
-      let msg: IncomingMessage;
+      let msg: IncomingWsMessage;
       try {
-        msg = JSON.parse(raw.toString()) as IncomingMessage;
+        msg = JSON.parse(raw.toString()) as IncomingWsMessage;
       } catch {
         return;
       }
 
       if (msg.type === "subscribe_map") {
-        if (userRole === "admin") {
-          adminClients.add(ws);
-          logger.debug({ userId }, "Admin subscribed to map feed");
-          ws.send(JSON.stringify({ type: "subscribed" }));
-        } else {
-          ws.send(JSON.stringify({ type: "error", message: "Admin role required" }));
+        if (userRole !== "admin") {
+          ws.send(JSON.stringify({ type: "error", message: "Admin role required to subscribe to map" }));
+          return;
         }
+        adminClients.add(ws);
+        logger.debug({ userId }, "Admin subscribed to map feed");
+        ws.send(JSON.stringify({ type: "subscribed" }));
         return;
       }
 
       if (msg.type === "location") {
-        const { driverId, lat, lng } = msg;
-        if (!driverId || typeof lat !== "number" || typeof lng !== "number") return;
+        // Only drivers can send location updates; derive driverId from token (never trust client)
+        if (userRole !== "driver") {
+          ws.send(JSON.stringify({ type: "error", message: "Driver role required to send location" }));
+          return;
+        }
 
-        // Update DB
+        const { lat, lng } = msg;
+        if (typeof lat !== "number" || typeof lng !== "number") {
+          ws.send(JSON.stringify({ type: "error", message: "lat and lng must be numbers" }));
+          return;
+        }
+
+        // Update DB using authenticated userId, not any client-supplied id
         await db
           .update(driverProfilesTable)
           .set({ currentLat: lat, currentLng: lng })
-          .where(eq(driverProfilesTable.userId, driverId));
+          .where(eq(driverProfilesTable.userId, userId));
 
-        // Broadcast to admin clients
+        // Broadcast to subscribed admin clients
         const broadcast = JSON.stringify({
           type: "driver_location",
-          driverId,
+          driverUserId: userId,
           lat,
           lng,
           updatedAt: new Date().toISOString(),
@@ -99,8 +110,7 @@ export function setupWebSocket(server: Server): void {
       adminClients.delete(ws);
     });
 
-    // Send initial ping
-    ws.send(JSON.stringify({ type: "connected" }));
+    ws.send(JSON.stringify({ type: "connected", userId, role: userRole }));
   });
 
   logger.info("WebSocket server mounted at /ws");
