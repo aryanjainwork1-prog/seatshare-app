@@ -69,10 +69,19 @@ export default function FindRidesScreen() {
           passengerLng: pLng,
           destLat: DEFAULT_DEST_LAT,
           destLng: DEFAULT_DEST_LNG,
-          maxResults: 20,
+          maxResults: 40,
         },
       });
-      setMatches(result.matches ?? []);
+      const allMatches = result.matches ?? [];
+      const destFilter = toText.trim().toLowerCase();
+      const filtered = destFilter
+        ? allMatches.filter(
+            (m) =>
+              m.trip.destAddress.toLowerCase().includes(destFilter) ||
+              m.trip.originAddress.toLowerCase().includes(destFilter),
+          )
+        : allMatches;
+      setMatches(filtered);
       setHasSearched(true);
     } catch {
       setMatches([]);

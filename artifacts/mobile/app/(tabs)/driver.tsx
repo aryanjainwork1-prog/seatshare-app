@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   FlatList,
   Platform,
   Pressable,
@@ -47,6 +48,7 @@ export default function DriverScreen() {
 
   const wsRef = useRef<WebSocket | null>(null);
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
+  const appStateRef = useRef(AppState.currentState);
 
   const { data: profilesData, refetch: refetchProfile } = useListDriverProfiles(
     { userId: user?.id, limit: 1 },
@@ -122,6 +124,24 @@ export default function DriverScreen() {
       stopLocationTracking();
     };
   }, [stopLocationTracking]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const prev = appStateRef.current;
+      appStateRef.current = nextState;
+      if (
+        (nextState === "background" || nextState === "inactive") &&
+        prev === "active"
+      ) {
+        stopLocationTracking();
+      } else if (nextState === "active" && prev !== "active") {
+        if (driverProfile?.isOnline && driverProfileId) {
+          startLocationTracking(driverProfileId).catch(() => {});
+        }
+      }
+    });
+    return () => subscription.remove();
+  }, [driverProfile?.isOnline, driverProfileId, startLocationTracking, stopLocationTracking]);
 
   async function toggleOnline() {
     if (!driverProfileId) return;

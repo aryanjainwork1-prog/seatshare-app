@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -79,7 +80,7 @@ export default function LoginScreen() {
 
   function handleSocialLogin() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    alert("Google / Apple login coming soon!");
+    Alert.alert("Coming Soon", "Google / Apple login is not available yet.");
   }
 
   const isLoading = sendOtpMutation.isPending || verifyOtpMutation.isPending;

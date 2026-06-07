@@ -7,9 +7,15 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
+import { useAuth } from "@/context/AuthContext";
+import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 
 function NativeTabLayout() {
+  const { user } = useAuth();
+  const { mode } = useMode();
+  const showDriver = mode === "driver" && user?.role === "driver";
+
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
@@ -20,10 +26,12 @@ function NativeTabLayout() {
         <Icon sf={{ default: "ticket", selected: "ticket.fill" }} />
         <Label>Bookings</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="driver">
-        <Icon sf={{ default: "car", selected: "car.fill" }} />
-        <Label>Drive</Label>
-      </NativeTabs.Trigger>
+      {showDriver && (
+        <NativeTabs.Trigger name="driver">
+          <Icon sf={{ default: "car", selected: "car.fill" }} />
+          <Label>Drive</Label>
+        </NativeTabs.Trigger>
+      )}
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
         <Label>Profile</Label>
@@ -34,8 +42,11 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const colors = useColors();
+  const { user } = useAuth();
+  const { mode } = useMode();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const showDriver = mode === "driver" && user?.role === "driver";
 
   return (
     <Tabs
@@ -97,6 +108,7 @@ function ClassicTabLayout() {
         name="driver"
         options={{
           title: "Drive",
+          href: showDriver ? undefined : null,
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="car" tintColor={color} size={22} />

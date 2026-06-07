@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { refreshToken, setAuthTokenGetter } from "@workspace/api-client-react";
 import type { AuthTokens, User } from "@workspace/api-client-react";
 
 interface AuthContextValue {
@@ -37,13 +37,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function restoreSession() {
       try {
-        const [storedToken, storedUser] = await Promise.all([
+        const [storedToken, storedRefresh, storedUser] = await Promise.all([
           SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
+          SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
           AsyncStorage.getItem(USER_KEY),
         ]);
+
         if (storedToken && storedUser) {
           setAccessToken(storedToken);
           setUser(JSON.parse(storedUser) as User);
+          return;
+        }
+
+        if (storedRefresh && storedUser) {
+          try {
+            const newTokens = await refreshToken({ refreshToken: storedRefresh });
+            await Promise.all([
+              SecureStore.setItemAsync(ACCESS_TOKEN_KEY, newTokens.accessToken),
+              SecureStore.setItemAsync(REFRESH_TOKEN_KEY, newTokens.refreshToken),
+              AsyncStorage.setItem(USER_KEY, JSON.stringify(newTokens.user)),
+            ]);
+            setAccessToken(newTokens.accessToken);
+            setUser(newTokens.user);
+          } catch {
+            await Promise.all([
+              SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
+              SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
+              AsyncStorage.removeItem(USER_KEY),
+            ]);
+          }
         }
       } catch {
         // session restore failed silently

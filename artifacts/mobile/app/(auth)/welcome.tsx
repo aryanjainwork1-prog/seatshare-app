@@ -2,7 +2,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
@@ -21,7 +21,7 @@ export default function WelcomeScreen() {
 
   function handleSocialLogin() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    alert("Google / Apple login coming soon!");
+    Alert.alert("Coming Soon", "Google / Apple login is not available yet.");
   }
 
   return (
