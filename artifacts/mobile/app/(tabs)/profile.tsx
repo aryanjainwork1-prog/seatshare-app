@@ -8,7 +8,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -76,6 +75,13 @@ export default function ProfileScreen() {
   }
 
   const isDriver = user?.role === "driver";
+  const isPassenger = !isDriver;
+
+  function handleModeSwitch(target: "passenger" | "driver") {
+    if (target === "driver" && !isDriver) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setMode(target);
+  }
 
   return (
     <ScrollView
@@ -86,7 +92,6 @@ export default function ProfileScreen() {
         <Text style={[styles.title, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
           Profile
         </Text>
-
         {!editing && (
           <Pressable onPress={() => setEditing(true)}>
             <Feather name="edit-2" size={18} color={colors.primary} />
@@ -100,7 +105,7 @@ export default function ProfileScreen() {
             {initials}
           </Text>
         </View>
-        {!editing ? (
+        {!editing && (
           <>
             <Text style={[styles.displayName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
               {user?.name ?? "No name set"}
@@ -109,7 +114,92 @@ export default function ProfileScreen() {
               {user?.phone}
             </Text>
           </>
-        ) : null}
+        )}
+      </View>
+
+      <View style={[styles.modeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.modeCardTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+          I'm travelling as…
+        </Text>
+        <View style={[styles.segmented, { backgroundColor: colors.muted }]}>
+          <Pressable
+            style={[
+              styles.segmentBtn,
+              mode === "passenger" && { backgroundColor: colors.background, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+            ]}
+            onPress={() => handleModeSwitch("passenger")}
+          >
+            <Feather
+              name="users"
+              size={15}
+              color={mode === "passenger" ? colors.primary : colors.mutedForeground}
+            />
+            <Text style={[
+              styles.segmentText,
+              {
+                color: mode === "passenger" ? colors.primary : colors.mutedForeground,
+                fontFamily: mode === "passenger" ? "Inter_600SemiBold" : "Inter_400Regular",
+              },
+            ]}>
+              Passenger
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.segmentBtn,
+              mode === "driver" && isDriver && { backgroundColor: colors.background, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+              !isDriver && styles.segmentBtnDisabled,
+            ]}
+            onPress={() => {
+              if (!isDriver) {
+                Alert.alert(
+                  "Driver registration required",
+                  "To offer rides, you need to register as a driver first. Contact support or sign up as a driver.",
+                );
+                return;
+              }
+              handleModeSwitch("driver");
+            }}
+          >
+            <Feather
+              name="truck"
+              size={15}
+              color={
+                !isDriver
+                  ? colors.mutedForeground
+                  : mode === "driver"
+                    ? colors.primary
+                    : colors.mutedForeground
+              }
+            />
+            <Text style={[
+              styles.segmentText,
+              {
+                color: !isDriver
+                  ? colors.mutedForeground
+                  : mode === "driver"
+                    ? colors.primary
+                    : colors.mutedForeground,
+                fontFamily: mode === "driver" && isDriver ? "Inter_600SemiBold" : "Inter_400Regular",
+              },
+            ]}>
+              Driver
+            </Text>
+            {!isDriver && (
+              <View style={[styles.lockBadge, { backgroundColor: `${colors.mutedForeground}22` }]}>
+                <Feather name="lock" size={9} color={colors.mutedForeground} />
+              </View>
+            )}
+          </Pressable>
+        </View>
+        <Text style={[styles.modeDesc, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          {mode === "driver" && isDriver
+            ? "Driver Mode — offer rides, manage trips, track earnings."
+            : isDriver
+              ? "Passenger Mode — find and book shared rides."
+              : "Passenger Mode active. Register as a driver to offer rides."}
+        </Text>
       </View>
 
       {editing ? (
@@ -145,7 +235,11 @@ export default function ProfileScreen() {
           <View style={styles.editActions}>
             <Pressable
               style={[styles.cancelBtn, { borderColor: colors.border }]}
-              onPress={() => { setEditing(false); setNameInput(user?.name ?? ""); setEmailInput(user?.email ?? ""); }}
+              onPress={() => {
+                setEditing(false);
+                setNameInput(user?.name ?? "");
+                setEmailInput(user?.email ?? "");
+              }}
             >
               <Text style={[styles.cancelBtnText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
                 Cancel
@@ -195,28 +289,6 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {isDriver && (
-        <View style={[styles.modeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View>
-            <Text style={[styles.modeTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-              Driver Mode
-            </Text>
-            <Text style={[styles.modeSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {mode === "driver" ? "You're in driver mode" : "Switch to offer rides"}
-            </Text>
-          </View>
-          <Switch
-            value={mode === "driver"}
-            onValueChange={(val) => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setMode(val ? "driver" : "passenger");
-            }}
-            trackColor={{ false: colors.border, true: `${colors.primary}99` }}
-            thumbColor={mode === "driver" ? colors.primary : colors.mutedForeground}
-          />
-        </View>
-      )}
-
       <Pressable
         testID="logout-button"
         style={({ pressed }) => [
@@ -259,6 +331,42 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 28 },
   displayName: { fontSize: 20 },
   phone: { fontSize: 14 },
+  modeCard: {
+    marginHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+    marginBottom: 12,
+  },
+  modeCardTitle: { fontSize: 14 },
+  segmented: {
+    flexDirection: "row",
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  segmentBtnDisabled: {
+    opacity: 0.5,
+  },
+  segmentText: { fontSize: 14 },
+  lockBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modeDesc: { fontSize: 12, lineHeight: 18 },
   editCard: {
     marginHorizontal: 16,
     borderRadius: 14,
@@ -322,18 +430,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   roleBadgeText: { fontSize: 12 },
-  modeCard: {
-    marginHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  modeTitle: { fontSize: 15 },
-  modeSub: { fontSize: 13, marginTop: 2 },
   logoutBtn: {
     marginHorizontal: 16,
     marginTop: 8,

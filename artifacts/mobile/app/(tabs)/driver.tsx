@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -31,6 +32,61 @@ import type { Booking } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
+import { BANGALORE_AREAS } from "@/constants/locations";
+
+function LocationInput({
+  value,
+  onChangeText,
+  placeholder,
+  icon,
+  iconColor,
+  colors,
+}: {
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder: string;
+  icon: "circle" | "map-pin";
+  iconColor: string;
+  colors: ReturnType<typeof useColors>;
+}) {
+  const [focused, setFocused] = useState(false);
+  const suggestions = value.trim().length >= 2
+    ? BANGALORE_AREAS.filter((a) => a.toLowerCase().includes(value.toLowerCase())).slice(0, 4)
+    : [];
+
+  return (
+    <View>
+      <View style={[dStyles.formInput, { backgroundColor: colors.muted, borderColor: focused ? colors.primary : colors.border }]}>
+        <Feather name={icon} size={14} color={iconColor} />
+        <TextInput
+          style={[dStyles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedForeground}
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
+        />
+      </View>
+      {focused && suggestions.length > 0 && (
+        <View style={[dStyles.suggestions, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {suggestions.map((s) => (
+            <Pressable
+              key={s}
+              style={[dStyles.suggestionItem, { borderBottomColor: colors.border }]}
+              onPress={() => { onChangeText(s); setFocused(false); }}
+            >
+              <Feather name="map-pin" size={12} color={colors.mutedForeground} />
+              <Text style={[dStyles.suggestionText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
+                {s}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function DriverScreen() {
   const colors = useColors();
@@ -57,6 +113,15 @@ export default function DriverScreen() {
   );
   const driverProfile = profilesData?.data?.[0];
   const driverProfileId = driverProfile?.id;
+
+  const [localIsOnline, setLocalIsOnline] = useState<boolean | null>(null);
+  const displayIsOnline = localIsOnline !== null ? localIsOnline : !!driverProfile?.isOnline;
+
+  useEffect(() => {
+    if (driverProfile !== undefined) {
+      setLocalIsOnline(driverProfile?.isOnline ?? false);
+    }
+  }, [driverProfile?.isOnline]);
 
   const updateProfileMutation = useUpdateDriverProfile();
   const createTripMutation = useCreateTrip();
@@ -135,30 +200,33 @@ export default function DriverScreen() {
       ) {
         stopLocationTracking();
       } else if (nextState === "active" && prev !== "active") {
-        if (driverProfile?.isOnline && driverProfileId) {
+        if (displayIsOnline && driverProfileId) {
           startLocationTracking(driverProfileId).catch(() => {});
         }
       }
     });
     return () => subscription.remove();
-  }, [driverProfile?.isOnline, driverProfileId, startLocationTracking, stopLocationTracking]);
+  }, [displayIsOnline, driverProfileId, startLocationTracking, stopLocationTracking]);
 
   async function toggleOnline() {
     if (!driverProfileId) return;
-    const newVal = !driverProfile?.isOnline;
+    const newVal = !displayIsOnline;
+    setLocalIsOnline(newVal);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      await updateProfileMutation.mutateAsync({
+      const updated = await updateProfileMutation.mutateAsync({
         id: driverProfileId,
         data: { isOnline: newVal },
       });
-      await refetchProfile();
+      setLocalIsOnline((updated as { isOnline?: boolean }).isOnline ?? newVal);
+      refetchProfile();
       if (newVal) {
         await startLocationTracking(driverProfileId);
       } else {
         stopLocationTracking();
       }
     } catch {
+      setLocalIsOnline(!newVal);
       Alert.alert("Error", "Could not update online status");
     }
   }
@@ -242,14 +310,14 @@ export default function DriverScreen() {
   if (mode !== "driver") {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.promptBox, { flex: 1, justifyContent: "center", alignItems: "center", gap: 16, padding: 32 }]}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 16, padding: 32 }}>
           <Feather name="truck" size={48} color={colors.mutedForeground} />
           <Text style={[styles.promptTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
             Driver Mode
           </Text>
           <Text style={[styles.promptText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", textAlign: "center" }]}>
             {user?.role === "driver"
-              ? "Switch to driver mode from your profile to access driver features."
+              ? "Switch to driver mode to access driver features."
               : "Register as a driver to offer rides and earn."}
           </Text>
           {user?.role === "driver" && (
@@ -262,6 +330,11 @@ export default function DriverScreen() {
               </Text>
             </Pressable>
           )}
+          <Pressable onPress={() => router.push("/(tabs)/profile")}>
+            <Text style={[styles.profileLink, { color: colors.primary, fontFamily: "Inter_400Regular" }]}>
+              Manage mode in Profile →
+            </Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -271,27 +344,36 @@ export default function DriverScreen() {
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={{ paddingBottom: 100 }}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
           Driver Dashboard
         </Text>
+        <Pressable onPress={() => { setMode("passenger"); Haptics.selectionAsync(); }} style={styles.switchModeBtn}>
+          <Feather name="users" size={14} color={colors.mutedForeground} />
+          <Text style={[styles.switchModeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Passenger
+          </Text>
+        </Pressable>
       </View>
 
-      <View style={[styles.onlineCard, { backgroundColor: colors.card, borderColor: driverProfile?.isOnline ? colors.success : colors.border }]}>
-        <View>
+      <View style={[styles.onlineCard, { backgroundColor: colors.card, borderColor: displayIsOnline ? colors.success : colors.border }]}>
+        <View style={{ flex: 1 }}>
           <Text style={[styles.onlineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            {driverProfile?.isOnline ? "You're Online" : "You're Offline"}
+            {displayIsOnline ? "You're Online" : "You're Offline"}
           </Text>
           <Text style={[styles.onlineSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {driverProfile?.isOnline ? "Passengers can find and book your trips" : "Toggle to go online and accept rides"}
+            {displayIsOnline
+              ? "Passengers can find and book your trips"
+              : "Toggle to go online and accept rides"}
           </Text>
         </View>
         <Switch
-          value={!!driverProfile?.isOnline}
+          value={displayIsOnline}
           onValueChange={toggleOnline}
           trackColor={{ false: colors.border, true: `${colors.success}99` }}
-          thumbColor={driverProfile?.isOnline ? colors.success : colors.mutedForeground}
+          thumbColor={displayIsOnline ? colors.success : colors.mutedForeground}
           disabled={updateProfileMutation.isPending}
         />
       </View>
@@ -315,27 +397,23 @@ export default function DriverScreen() {
               Publish a Trip
             </Text>
 
-            <View style={[styles.formInput, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Feather name="circle" size={14} color={colors.success} />
-              <TextInput
-                style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-                placeholder="From (origin)"
-                placeholderTextColor={colors.mutedForeground}
-                value={formFrom}
-                onChangeText={setFormFrom}
-              />
-            </View>
+            <LocationInput
+              value={formFrom}
+              onChangeText={setFormFrom}
+              placeholder="From (origin)"
+              icon="circle"
+              iconColor={colors.success}
+              colors={colors}
+            />
 
-            <View style={[styles.formInput, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Feather name="map-pin" size={14} color={colors.destructive} />
-              <TextInput
-                style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-                placeholder="To (destination)"
-                placeholderTextColor={colors.mutedForeground}
-                value={formTo}
-                onChangeText={setFormTo}
-              />
-            </View>
+            <LocationInput
+              value={formTo}
+              onChangeText={setFormTo}
+              placeholder="To (destination)"
+              icon="map-pin"
+              iconColor={colors.destructive}
+              colors={colors}
+            />
 
             <View style={styles.formRow}>
               <View style={[styles.formInput, styles.formHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
@@ -464,13 +542,53 @@ export default function DriverScreen() {
   );
 }
 
+const dStyles = StyleSheet.create({
+  formInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    height: 44,
+    gap: 8,
+  },
+  formInputText: { flex: 1, fontSize: 14 },
+  suggestions: {
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 4,
+    overflow: "hidden",
+    zIndex: 20,
+  },
+  suggestionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  suggestionText: { fontSize: 13, flex: 1 },
+});
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
     paddingHorizontal: 20,
     paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: { fontSize: 22 },
+  switchModeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  switchModeText: { fontSize: 13 },
   onlineCard: {
     marginHorizontal: 16,
     borderRadius: 14,
@@ -480,6 +598,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
+    gap: 12,
   },
   onlineLabel: { fontSize: 16, marginBottom: 2 },
   onlineSub: { fontSize: 13 },
@@ -572,9 +691,9 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   emptyText: { fontSize: 13, textAlign: "center" },
-  promptBox: {},
   promptTitle: { fontSize: 20 },
   promptText: { fontSize: 14 },
+  profileLink: { fontSize: 14 },
   switchBtn: {
     paddingHorizontal: 24,
     paddingVertical: 12,
