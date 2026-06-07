@@ -29,13 +29,13 @@ router.use(bookingsRouter);
 router.use(paymentsRouter);
 router.use(ratingsRouter);
 router.use(vehiclesRouter);
+router.use(driversRouter);   // GET list/profile + PATCH own profile; /verify guarded inline
+router.use(matchRouter);     // POST /match — passengers search rides
 
 // Admin-only routes
 router.use(requireRole("admin"), usersRouter);
-router.use(requireRole("admin"), driversRouter);
 router.use(requireRole("admin"), statsRouter);
 router.use(requireRole("admin"), adminLogsRouter);
 router.use(requireRole("admin"), supportRouter);
-router.use(requireRole("admin"), matchRouter);
 
 export default router;

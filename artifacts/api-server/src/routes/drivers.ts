@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, SQL, count } from "drizzle-orm";
 import { db, driverProfilesTable, usersTable, vehiclesTable } from "@workspace/db";
+import { requireRole } from "../middleware/auth";
 import {
   ListDriverProfilesQueryParams,
   GetDriverProfileParams,
@@ -76,7 +77,7 @@ router.patch("/driver-profiles/:id", async (req, res): Promise<void> => {
   res.json(await enrichProfile(profile));
 });
 
-router.patch("/driver-profiles/:id/verify", async (req, res): Promise<void> => {
+router.patch("/driver-profiles/:id/verify", requireRole("admin"), async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = Number(raw);
 
