@@ -163,6 +163,17 @@ export default function DriverScreen() {
     }
   }
 
+  async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+    if (Platform.OS === "web") return null;
+    try {
+      const results = await Location.geocodeAsync(address.trim());
+      if (results.length > 0) return { lat: results[0].latitude, lng: results[0].longitude };
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
   async function handlePublishTrip() {
     if (!driverProfileId || !formFrom || !formTo) {
       Alert.alert("Required", "Please fill in origin and destination.");
@@ -172,16 +183,26 @@ export default function DriverScreen() {
     const fare = parseFloat(formFare) || 100;
     const departure = formDeparture || new Date(Date.now() + 3600000).toISOString();
 
+    const [fromCoords, toCoords] = await Promise.all([
+      geocodeAddress(formFrom),
+      geocodeAddress(formTo),
+    ]);
+
+    const originLat = fromCoords?.lat ?? 12.9716;
+    const originLng = fromCoords?.lng ?? 77.5946;
+    const destLat = toCoords?.lat ?? 13.0827;
+    const destLng = toCoords?.lng ?? 80.2707;
+
     try {
       await createTripMutation.mutateAsync({
         data: {
           driverProfileId,
           originAddress: formFrom,
           destAddress: formTo,
-          originLat: 12.9716,
-          originLng: 77.5946,
-          destLat: 13.0827,
-          destLng: 80.2707,
+          originLat,
+          originLng,
+          destLat,
+          destLng,
           availableSeats: seats,
           maxDeviationKm: 5,
           farePerSeat: fare,

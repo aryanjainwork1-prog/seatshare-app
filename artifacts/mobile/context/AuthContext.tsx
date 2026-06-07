@@ -43,13 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem(USER_KEY),
         ]);
 
-        if (storedToken && storedUser) {
-          setAccessToken(storedToken);
-          setUser(JSON.parse(storedUser) as User);
-          return;
-        }
-
-        if (storedRefresh && storedUser) {
+        if (storedRefresh) {
           try {
             const newTokens = await refreshToken({ refreshToken: storedRefresh });
             await Promise.all([
@@ -59,13 +53,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ]);
             setAccessToken(newTokens.accessToken);
             setUser(newTokens.user);
+            return;
           } catch {
+            if (storedToken && storedUser) {
+              setAccessToken(storedToken);
+              setUser(JSON.parse(storedUser) as User);
+              return;
+            }
             await Promise.all([
               SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
               SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
               AsyncStorage.removeItem(USER_KEY),
             ]);
           }
+        } else if (storedToken && storedUser) {
+          setAccessToken(storedToken);
+          setUser(JSON.parse(storedUser) as User);
         }
       } catch {
         // session restore failed silently

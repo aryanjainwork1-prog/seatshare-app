@@ -36,20 +36,44 @@ export default function FindRidesScreen() {
 
   const matchMutation = useMatchDrivers();
 
+  async function resolveCoords(
+    text: string,
+    fallbackLat: number,
+    fallbackLng: number,
+  ): Promise<{ lat: number; lng: number }> {
+    if (!text.trim() || Platform.OS === "web") return { lat: fallbackLat, lng: fallbackLng };
+    try {
+      const results = await Location.geocodeAsync(text.trim());
+      if (results.length > 0) {
+        return { lat: results[0].latitude, lng: results[0].longitude };
+      }
+    } catch {
+      // fall through to default
+    }
+    return { lat: fallbackLat, lng: fallbackLng };
+  }
+
   async function handleSearch() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     let pLat = DEFAULT_ORIGIN_LAT;
     let pLng = DEFAULT_ORIGIN_LNG;
 
     if (Platform.OS !== "web") {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
-        try {
-          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          pLat = pos.coords.latitude;
-          pLng = pos.coords.longitude;
-        } catch {
-          // use defaults
+        if (fromText.trim()) {
+          const resolved = await resolveCoords(fromText, DEFAULT_ORIGIN_LAT, DEFAULT_ORIGIN_LNG);
+          pLat = resolved.lat;
+          pLng = resolved.lng;
+        } else {
+          try {
+            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            pLat = pos.coords.latitude;
+            pLng = pos.coords.longitude;
+          } catch {
+            // use defaults
+          }
         }
       }
     } else {
@@ -62,26 +86,19 @@ export default function FindRidesScreen() {
       });
     }
 
+    const destResolved = await resolveCoords(toText, DEFAULT_DEST_LAT, DEFAULT_DEST_LNG);
+
     try {
       const result = await matchMutation.mutateAsync({
         data: {
           passengerLat: pLat,
           passengerLng: pLng,
-          destLat: DEFAULT_DEST_LAT,
-          destLng: DEFAULT_DEST_LNG,
+          destLat: destResolved.lat,
+          destLng: destResolved.lng,
           maxResults: 40,
         },
       });
-      const allMatches = result.matches ?? [];
-      const destFilter = toText.trim().toLowerCase();
-      const filtered = destFilter
-        ? allMatches.filter(
-            (m) =>
-              m.trip.destAddress.toLowerCase().includes(destFilter) ||
-              m.trip.originAddress.toLowerCase().includes(destFilter),
-          )
-        : allMatches;
-      setMatches(filtered);
+      setMatches(result.matches ?? []);
       setHasSearched(true);
     } catch {
       setMatches([]);
