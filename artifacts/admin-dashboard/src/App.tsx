@@ -1,9 +1,22 @@
-import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Switch,
+  Route,
+  Router as WouterRouter,
+  Redirect,
+  useLocation,
+} from "wouter";
+import {
+  QueryClient,
+  QueryClientProvider,
+  QueryCache,
+  MutationCache,
+} from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Shell } from "@/components/layout/shell";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { triggerUnauthorized } from "@/lib/authUtils";
+import { ApiError } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
 
 import Dashboard from "@/pages/dashboard";
@@ -18,16 +31,40 @@ import LiveMap from "@/pages/live-map";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
+// Global 401/403 handler: any query or mutation that returns Unauthorized/Forbidden
+// mid-session will trigger logout and redirect to the login page.
+function isAuthError(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.status === 401 || error.status === 403)
+  );
+}
+
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (isAuthError(error)) triggerUnauthorized();
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      if (isAuthError(error)) triggerUnauthorized();
+    },
+  }),
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failureCount, error) => {
+        if (isAuthError(error)) return false;
+        return failureCount < 1;
+      },
       refetchOnWindowFocus: false,
     },
   },
 });
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
+// ── Route guard ───────────────────────────────────────────────────────────────
+
+function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -38,12 +75,15 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
+  // Redirect to login if not authenticated OR not an admin
+  if (!user || user.role !== "admin") {
     return <Redirect to="/login" />;
   }
 
   return <>{children}</>;
 }
+
+// ── Router ────────────────────────────────────────────────────────────────────
 
 function Router() {
   const [location] = useLocation();
@@ -53,7 +93,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={LoginPage} />
       <Route>
-        <RequireAuth>
+        <RequireAdmin>
           <Shell variant={isMap ? "fullscreen" : "default"}>
             <Switch>
               <Route path="/" component={Dashboard} />
@@ -68,7 +108,7 @@ function Router() {
               <Route component={NotFound} />
             </Switch>
           </Shell>
-        </RequireAuth>
+        </RequireAdmin>
       </Route>
     </Switch>
   );
@@ -85,12 +125,14 @@ function LoginPage() {
     );
   }
 
-  if (user) {
+  if (user && user.role === "admin") {
     return <Redirect to="/" />;
   }
 
   return <Login />;
 }
+
+// ── App root ──────────────────────────────────────────────────────────────────
 
 function App() {
   return (
