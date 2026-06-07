@@ -108,6 +108,7 @@ export interface DriverProfileUpdate {
   licenseNumber?: string;
   currentLat?: number;
   currentLng?: number;
+  isOnline?: boolean;
 }
 
 export interface VerifyInput {
@@ -420,6 +421,7 @@ limit?: number;
 };
 
 export type ListDriverProfilesParams = {
+userId?: number;
 isOnline?: boolean;
 isVerified?: boolean;
 page?: number;

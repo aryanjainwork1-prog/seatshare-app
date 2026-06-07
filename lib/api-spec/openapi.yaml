@@ -249,6 +249,10 @@ paths:
       summary: List driver profiles
       parameters:
         - in: query
+          name: userId
+          schema:
+            type: integer
+        - in: query
           name: isOnline
           schema:
             type: boolean
@@ -1083,6 +1087,8 @@ components:
           type: number
         currentLng:
           type: number
+        isOnline:
+          type: boolean
 
     VerifyInput:
       type: object

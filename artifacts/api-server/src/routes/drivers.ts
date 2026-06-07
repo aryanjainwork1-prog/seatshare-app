@@ -23,10 +23,11 @@ router.get("/driver-profiles", async (req, res): Promise<void> => {
     return;
   }
 
-  const { isOnline, isVerified, page = 1, limit = 20 } = parsed.data;
+  const { userId, isOnline, isVerified, page = 1, limit = 20 } = parsed.data;
   const offset = (page - 1) * limit;
 
   const conditions: SQL[] = [];
+  if (userId !== undefined) conditions.push(eq(driverProfilesTable.userId, userId));
   if (isOnline !== undefined) conditions.push(eq(driverProfilesTable.isOnline, isOnline));
   if (isVerified !== undefined) conditions.push(eq(driverProfilesTable.isVerified, isVerified));
 

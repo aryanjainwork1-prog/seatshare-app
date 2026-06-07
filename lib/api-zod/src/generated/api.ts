@@ -239,6 +239,7 @@ export const SuspendUserResponse = zod.object({
  * @summary List driver profiles
  */
 export const ListDriverProfilesQueryParams = zod.object({
+  "userId": zod.coerce.number().optional(),
   "isOnline": zod.coerce.boolean().optional(),
   "isVerified": zod.coerce.boolean().optional(),
   "page": zod.coerce.number().optional(),
@@ -337,7 +338,8 @@ export const UpdateDriverProfileParams = zod.object({
 export const UpdateDriverProfileBody = zod.object({
   "licenseNumber": zod.string().optional(),
   "currentLat": zod.number().optional(),
-  "currentLng": zod.number().optional()
+  "currentLng": zod.number().optional(),
+  "isOnline": zod.boolean().optional()
 })
 
 export const UpdateDriverProfileResponse = zod.object({

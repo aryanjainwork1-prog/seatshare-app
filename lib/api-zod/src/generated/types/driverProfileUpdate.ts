@@ -10,4 +10,5 @@ export interface DriverProfileUpdate {
   licenseNumber?: string;
   currentLat?: number;
   currentLng?: number;
+  isOnline?: boolean;
 }

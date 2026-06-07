@@ -7,6 +7,7 @@
  */
 
 export type ListDriverProfilesParams = {
+userId?: number;
 isOnline?: boolean;
 isVerified?: boolean;
 page?: number;
