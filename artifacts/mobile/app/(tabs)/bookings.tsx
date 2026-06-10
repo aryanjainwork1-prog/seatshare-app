@@ -219,6 +219,7 @@ export default function BookingsScreen() {
       fromLng: booking.pickupLng,
       toLat: booking.dropoffLat,
       toLng: booking.dropoffLng,
+      autoSearch: true,
     };
     await AsyncStorage.setItem("seatshare_prefill_search", JSON.stringify(prefill));
     router.push("/");

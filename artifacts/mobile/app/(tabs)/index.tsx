@@ -61,7 +61,7 @@ export default function FindRidesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      AsyncStorage.getItem("seatshare_prefill_search").then((raw) => {
+      AsyncStorage.getItem("seatshare_prefill_search").then(async (raw) => {
         if (!raw) return;
         try {
           const prefill = JSON.parse(raw) as {
@@ -71,6 +71,7 @@ export default function FindRidesScreen() {
             fromLng?: number;
             toLat?: number;
             toLng?: number;
+            autoSearch?: boolean;
           };
           if (prefill.fromText) setFromText(prefill.fromText);
           if (prefill.toText) setToText(prefill.toText);
@@ -79,10 +80,39 @@ export default function FindRidesScreen() {
           if (prefill.toLat != null && prefill.toLng != null)
             setToCoords({ lat: prefill.toLat, lng: prefill.toLng });
           AsyncStorage.removeItem("seatshare_prefill_search").catch(() => {});
+
+          if (
+            prefill.autoSearch &&
+            prefill.fromLat != null &&
+            prefill.fromLng != null &&
+            prefill.toLat != null &&
+            prefill.toLng != null
+          ) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            try {
+              const result = await matchMutation.mutateAsync({
+                data: {
+                  passengerLat: prefill.fromLat,
+                  passengerLng: prefill.fromLng,
+                  destLat: prefill.toLat,
+                  destLng: prefill.toLng,
+                  maxResults: 40,
+                },
+              });
+              setMatches(result.matches ?? []);
+              setHasSearched(true);
+              setSelectedMatchId(null);
+            } catch {
+              setMatches([]);
+              setHasSearched(true);
+              setSelectedMatchId(null);
+            }
+          }
         } catch {
           // ignore
         }
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),
   );
 
