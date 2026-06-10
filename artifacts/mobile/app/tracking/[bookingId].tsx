@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import NetInfo from "@react-native-community/netinfo";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -99,6 +100,19 @@ export default function TrackingScreen() {
       }
     });
     return () => subscription.remove();
+  }, [refetchProfile]);
+
+  // Refetch immediately when the device reconnects to the network
+  useEffect(() => {
+    let wasConnected: boolean | null = null;
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const isConnected = state.isConnected ?? false;
+      if (wasConnected === false && isConnected) {
+        refetchProfile();
+      }
+      wasConnected = isConnected;
+    });
+    return () => unsubscribe();
   }, [refetchProfile]);
 
   const isOnline = profile?.isOnline;
