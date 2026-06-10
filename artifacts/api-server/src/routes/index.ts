@@ -15,6 +15,7 @@ import matchRouter from "./match";
 import adminLogsRouter from "./admin-logs";
 import pushTokenRouter from "./push-token";
 import meRouter from "./me";
+import driverLocationRouter from "./driver-location";
 
 const router: IRouter = Router();
 
@@ -35,6 +36,7 @@ router.use(vehiclesRouter);
 router.use(driversRouter);   // GET list/profile + PATCH own profile; /verify guarded inline
 router.use(matchRouter);     // POST /match — passengers search rides
 router.use(pushTokenRouter); // PATCH /me/push-token — register Expo push token
+router.use(driverLocationRouter); // POST /driver-location — background location update from driver
 
 // Admin-only routes
 router.use(requireRole("admin"), usersRouter);

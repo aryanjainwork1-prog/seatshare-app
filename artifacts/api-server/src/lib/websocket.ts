@@ -123,6 +123,42 @@ async function notifyNearbyPassengers(driverUserId: number, lat: number, lng: nu
   }
 }
 
+export function broadcastDriverLocation(
+  userId: number,
+  lat: number,
+  lng: number,
+): void {
+  const broadcast = JSON.stringify({
+    type: "driver_location",
+    driverUserId: userId,
+    lat,
+    lng,
+    updatedAt: new Date().toISOString(),
+  });
+
+  for (const client of adminClients) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(broadcast);
+    } else {
+      adminClients.delete(client);
+    }
+  }
+
+  const subscribedPassengers = passengerClients.get(String(userId));
+  if (subscribedPassengers) {
+    for (const client of subscribedPassengers) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(broadcast);
+      } else {
+        subscribedPassengers.delete(client);
+        clientDriverSubscription.delete(client);
+      }
+    }
+  }
+}
+
+export { notifyNearbyPassengers };
+
 export function setupWebSocket(server: Server): void {
   const wss = new WebSocketServer({ server, path: "/ws" });
 

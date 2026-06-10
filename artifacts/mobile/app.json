@@ -14,9 +14,23 @@
       "backgroundColor": "#040d1c"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "UIBackgroundModes": ["location", "fetch"],
+        "NSLocationWhenInUseUsageDescription": "SeatShare needs your location to show your position to passengers.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "SeatShare needs your location in the background to keep passengers updated while you drive.",
+        "NSLocationAlwaysUsageDescription": "SeatShare needs your location in the background to keep passengers updated while you drive."
+      }
     },
-    "android": {},
+    "android": {
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -35,6 +49,16 @@
           "icon": "./assets/images/icon.png",
           "color": "#0f766e",
           "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "SeatShare needs your location in the background to keep passengers updated while you drive.",
+          "locationAlwaysPermission": "SeatShare needs your location in the background to keep passengers updated while you drive.",
+          "locationWhenInUsePermission": "SeatShare needs your location to show your position to passengers.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ]
     ],

@@ -17,6 +17,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import {
+  clearBgLocationCredentials,
+  startBackgroundLocationTask,
+  stopBackgroundLocationTask,
+  storeBgLocationCredentials,
+} from "@/lib/backgroundLocation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -147,7 +153,7 @@ export default function DriverScreen() {
     myTripIds.includes(b.tripId),
   );
 
-  const stopLocationTracking = useCallback(() => {
+  const stopForegroundTracking = useCallback(() => {
     locationSubRef.current?.remove();
     locationSubRef.current = null;
     if (wsRef.current) {
@@ -156,62 +162,88 @@ export default function DriverScreen() {
     }
   }, []);
 
+  const stopAllTracking = useCallback(async () => {
+    stopForegroundTracking();
+    await stopBackgroundLocationTask();
+    await clearBgLocationCredentials();
+  }, [stopForegroundTracking]);
+
+  const startForegroundTracking = useCallback(
+    async (profileId: number) => {
+      if (!accessToken || !process.env.EXPO_PUBLIC_DOMAIN) return;
+      if (Platform.OS === "web") return;
+
+      stopForegroundTracking();
+
+      const wsUrl = `wss://${process.env.EXPO_PUBLIC_DOMAIN}/ws?token=${accessToken}`;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      locationSubRef.current = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 20 },
+        (loc) => {
+          const { latitude: lat, longitude: lng } = loc.coords;
+          setCurrentLocation({ lat, lng });
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(
+              JSON.stringify({
+                type: "location",
+                driverId: profileId,
+                lat,
+                lng,
+              }),
+            );
+          }
+        },
+      );
+    },
+    [accessToken, stopForegroundTracking],
+  );
+
   const startLocationTracking = useCallback(
     async (profileId: number) => {
       if (!accessToken || !process.env.EXPO_PUBLIC_DOMAIN) return;
+      if (Platform.OS === "web") return;
 
-      if (Platform.OS !== "web") {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") return;
+      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== "granted") return;
 
-        const wsUrl = `wss://${process.env.EXPO_PUBLIC_DOMAIN}/ws?token=${accessToken}`;
-        wsRef.current = new WebSocket(wsUrl);
+      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
 
-        locationSubRef.current = await Location.watchPositionAsync(
-          { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 20 },
-          (loc) => {
-            const { latitude: lat, longitude: lng } = loc.coords;
-            setCurrentLocation({ lat, lng });
-            if (wsRef.current?.readyState === WebSocket.OPEN) {
-              wsRef.current.send(
-                JSON.stringify({
-                  type: "location",
-                  driverId: profileId,
-                  lat,
-                  lng,
-                }),
-              );
-            }
-          },
-        );
+      if (bgStatus === "granted") {
+        await storeBgLocationCredentials(accessToken, process.env.EXPO_PUBLIC_DOMAIN);
+        await startBackgroundLocationTask();
       }
+
+      await startForegroundTracking(profileId);
     },
-    [accessToken],
+    [accessToken, startForegroundTracking],
   );
 
   useEffect(() => {
     return () => {
-      stopLocationTracking();
+      stopForegroundTracking();
     };
-  }, [stopLocationTracking]);
+  }, [stopForegroundTracking]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       const prev = appStateRef.current;
       appStateRef.current = nextState;
+
       if (
         (nextState === "background" || nextState === "inactive") &&
         prev === "active"
       ) {
-        stopLocationTracking();
+        stopForegroundTracking();
       } else if (nextState === "active" && prev !== "active") {
         if (displayIsOnline && driverProfileId) {
-          startLocationTracking(driverProfileId).catch(() => {});
+          startForegroundTracking(driverProfileId).catch(() => {});
         }
       }
     });
     return () => subscription.remove();
-  }, [displayIsOnline, driverProfileId, startLocationTracking, stopLocationTracking]);
+  }, [displayIsOnline, driverProfileId, startForegroundTracking, stopForegroundTracking]);
 
   async function toggleOnline() {
     if (!driverProfileId) return;
@@ -228,7 +260,7 @@ export default function DriverScreen() {
       if (newVal) {
         await startLocationTracking(driverProfileId);
       } else {
-        stopLocationTracking();
+        await stopAllTracking();
       }
     } catch {
       setLocalIsOnline(!newVal);
