@@ -235,8 +235,9 @@ export default function BookingsScreen() {
     const isCancelled = booking.status === "cancelled";
     const needsSimilarSearch = isRejected || isCancelled;
 
-    const driverProfile = (trip as { driverProfile?: { userId?: number; user?: { name?: string }; vehicle?: { make?: string; model?: string; color?: string; licensePlate?: string }; rating?: number } } | undefined)?.driverProfile;
+    const driverProfile = (trip as { driverProfile?: { userId?: number; user?: { name?: string; bio?: string }; vehicle?: { make?: string; model?: string; color?: string; licensePlate?: string }; rating?: number } } | undefined)?.driverProfile;
     const driverName = driverProfile?.user?.name;
+    const driverBio = driverProfile?.user?.bio;
     const vehicle = driverProfile?.vehicle;
     const rating = driverProfile?.rating;
 
@@ -303,6 +304,12 @@ export default function BookingsScreen() {
             )}
           </View>
         )}
+
+        {driverBio ? (
+          <Text style={[styles.driverBio, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            {driverBio}
+          </Text>
+        ) : null}
 
         {isRejected && (
           <View style={[styles.statusBanner, { backgroundColor: `${STATUS_COLORS.rejected}15`, borderColor: `${STATUS_COLORS.rejected}40` }]}>
@@ -740,6 +747,7 @@ const styles = StyleSheet.create({
   },
   driverInitials: { fontSize: 14 },
   driverName: { fontSize: 14 },
+  driverBio: { fontSize: 13, lineHeight: 19 },
   vehicleText: { fontSize: 12, marginTop: 1 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 3 },
   ratingText: { fontSize: 13 },
