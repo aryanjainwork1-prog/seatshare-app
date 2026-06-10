@@ -487,6 +487,42 @@ export default function TripDetailScreen() {
           </View>
         </View>
 
+        {/* Driver bio + personal details — only when the driver has filled them in */}
+        {(driver?.bio || driver?.age || driver?.gender) && (
+          <View style={[styles.bioCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {(driver?.age || driver?.gender) && (
+              <View style={styles.bioChipRow}>
+                {driver?.age && (
+                  <View style={[styles.bioChip, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
+                    <Feather name="user" size={12} color={colors.primary} />
+                    <Text style={[styles.bioChipText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
+                      {driver.age} yrs
+                    </Text>
+                  </View>
+                )}
+                {driver?.gender && (
+                  <View style={[styles.bioChip, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
+                    <Feather name={driver.gender === "M" ? "user" : "user"} size={12} color={colors.primary} />
+                    <Text style={[styles.bioChipText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
+                      {driver.gender === "M" ? "Male" : "Female"}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+            {driver?.bio && (
+              <>
+                {(driver?.age || driver?.gender) && (
+                  <View style={[styles.bioSep, { backgroundColor: colors.border }]} />
+                )}
+                <Text style={[styles.bioText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
+                  {driver.bio}
+                </Text>
+              </>
+            )}
+          </View>
+        )}
+
         <View style={[styles.routeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.routeRow}>
             <View style={[styles.routeDot, { borderColor: colors.success }]} />
@@ -636,6 +672,29 @@ const styles = StyleSheet.create({
   },
   miniCodeLabel: { fontSize: 10 },
   miniCodeValue: { fontSize: 18, letterSpacing: 2 },
+  bioCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 10,
+  },
+  bioChipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  bioChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  bioChipText: { fontSize: 13 },
+  bioSep: { height: 1 },
+  bioText: { fontSize: 14, lineHeight: 21 },
   routeCard: {
     borderRadius: 14,
     borderWidth: 1,
