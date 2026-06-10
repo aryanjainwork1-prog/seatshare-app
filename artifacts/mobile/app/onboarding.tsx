@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useUpdateMe } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { BANGALORE_AREAS } from "@/constants/locations";
+import { MUMBAI_AREAS } from "@/constants/locations";
 
 const IS_DEV = __DEV__ || process.env.NODE_ENV === "development";
 
@@ -57,10 +57,10 @@ export default function OnboardingScreen() {
   const [travelTime, setTravelTime] = useState<string>("morning");
 
   const homeSuggestions = homeArea.trim().length >= 2
-    ? BANGALORE_AREAS.filter(a => a.toLowerCase().includes(homeArea.toLowerCase())).slice(0, 4)
+    ? MUMBAI_AREAS.filter(a => a.toLowerCase().includes(homeArea.toLowerCase())).slice(0, 4)
     : [];
   const destSuggestions = destination.trim().length >= 2
-    ? BANGALORE_AREAS.filter(a => a.toLowerCase().includes(destination.toLowerCase())).slice(0, 4)
+    ? MUMBAI_AREAS.filter(a => a.toLowerCase().includes(destination.toLowerCase())).slice(0, 4)
     : [];
 
   async function handleNext() {
@@ -222,7 +222,7 @@ export default function OnboardingScreen() {
                 <Feather name="home" size={16} color={colors.mutedForeground} />
                 <TextInput
                   style={[styles.inputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-                  placeholder="e.g. Koramangala, Bangalore"
+                  placeholder="e.g. Andheri West, Mumbai"
                   placeholderTextColor={colors.mutedForeground}
                   value={homeArea}
                   onChangeText={setHomeArea}
@@ -256,7 +256,7 @@ export default function OnboardingScreen() {
                 <Feather name="map-pin" size={16} color={colors.mutedForeground} />
                 <TextInput
                   style={[styles.inputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-                  placeholder="e.g. Electronic City, Bangalore"
+                  placeholder="e.g. BKC, Mumbai"
                   placeholderTextColor={colors.mutedForeground}
                   value={destination}
                   onChangeText={setDestination}

@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSendOtp, useVerifyOtp } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function LoginScreen() {
@@ -26,6 +27,7 @@ export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
+  const { isDemoMode } = useDemoMode();
 
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -72,6 +74,10 @@ export default function LoginScreen() {
         },
       });
       await login(tokens);
+      await AsyncStorage.setItem(
+        "seatshare_mode",
+        role === "driver" ? "driver" : "passenger",
+      );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/");
     } catch {
@@ -82,6 +88,29 @@ export default function LoginScreen() {
   function handleSocialLogin() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert("Coming Soon", "Google / Apple login is not available yet.");
+  }
+
+  async function handleDemoLogin() {
+    const demoPhone = role === "driver" ? "9000000002" : "9000000001";
+    setPhone(demoPhone);
+    setError("");
+    try {
+      const result = await sendOtpMutation.mutateAsync({ data: { phone: `+91${demoPhone}` } });
+      const tokens = await verifyOtpMutation.mutateAsync({
+        data: {
+          phone: `+91${demoPhone}`,
+          otp: "123456",
+          sessionId: result.sessionId,
+          role: role ?? "passenger",
+        },
+      });
+      await login(tokens);
+      await AsyncStorage.setItem("seatshare_mode", role === "driver" ? "driver" : "passenger");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/");
+    } catch {
+      setError("Demo login failed. Make sure the server is running.");
+    }
   }
 
   const isLoading = sendOtpMutation.isPending || verifyOtpMutation.isPending;
@@ -205,6 +234,21 @@ export default function LoginScreen() {
             </Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
+          {isDemoMode && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.demoBtn,
+                { backgroundColor: `${colors.primary}18`, borderColor: `${colors.primary}55`, opacity: pressed || isLoading ? 0.7 : 1 },
+              ]}
+              onPress={handleDemoLogin}
+              disabled={isLoading}
+            >
+              <Feather name="zap" size={16} color={colors.primary} />
+              <Text style={[styles.demoBtnText, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+                Demo Login ({role === "driver" ? "Driver" : "Passenger"})
+              </Text>
+            </Pressable>
+          )}
           <View style={styles.socialRow}>
             <Pressable
               style={({ pressed }) => [
@@ -357,4 +401,14 @@ const styles = StyleSheet.create({
   socialText: {
     fontSize: 14,
   },
+  demoBtn: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  demoBtnText: { fontSize: 15 },
 });

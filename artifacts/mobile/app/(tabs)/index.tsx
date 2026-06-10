@@ -19,268 +19,26 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMatchDrivers } from "@workspace/api-client-react";
 import type { MatchResult } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
-import type { RecentSearch } from "@/hooks/useRecentSearches";
 import { MapPickerModal } from "@/components/MapPickerModal";
 import type { PickedLocation } from "@/components/MapPickerModal";
+import { LocationInput } from "@/components/LocationInput";
 import { RoutePreviewMap } from "@/components/RoutePreviewMap";
 
-type GeoSuggestion = {
-  display_name: string;
-  lat: string;
-  lon: string;
-};
-
-const DEFAULT_ORIGIN_LAT = 12.9716;
-const DEFAULT_ORIGIN_LNG = 77.5946;
-const DEFAULT_DEST_LAT = 13.0827;
-const DEFAULT_DEST_LNG = 80.2707;
-
-function LocationInput({
-  value,
-  onChangeText,
-  onSelectLocation,
-  placeholder,
-  icon,
-  iconColor,
-  colors,
-  onMapPress,
-  hasPinnedCoords,
-  recents,
-}: {
-  value: string;
-  onChangeText: (t: string) => void;
-  onSelectLocation?: (text: string, lat: number, lng: number) => void;
-  placeholder: string;
-  icon: "circle" | "map-pin";
-  iconColor: string;
-  colors: ReturnType<typeof useColors>;
-  onMapPress?: () => void;
-  hasPinnedCoords?: boolean;
-  recents?: RecentSearch[];
-}) {
-  const [focused, setFocused] = useState(false);
-  const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
-  const [fetchingGeo, setFetchingGeo] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.trim().length < 3) {
-      setSuggestions([]);
-      setFetchingGeo(false);
-      return;
-    }
-    setFetchingGeo(true);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value.trim())}&format=json&limit=5&addressdetails=0`;
-        const resp = await fetch(url, {
-          headers: { "Accept-Language": "en", "User-Agent": "SeatShare/1.0" },
-        });
-        const data = (await resp.json()) as GeoSuggestion[];
-        setSuggestions(data);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setFetchingGeo(false);
-      }
-    }, 350);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [value]);
-
-  function handleBlur() {
-    setTimeout(() => {
-      setFocused(false);
-    }, 200);
-  }
-
-  function handleClear() {
-    onChangeText("");
-    setSuggestions([]);
-  }
-
-  function handlePickSuggestion(s: GeoSuggestion) {
-    const lat = parseFloat(s.lat);
-    const lng = parseFloat(s.lon);
-    if (onSelectLocation) {
-      onSelectLocation(s.display_name, lat, lng);
-    } else {
-      onChangeText(s.display_name);
-    }
-    setSuggestions([]);
-    setFocused(false);
-  }
-
-  function handlePickRecent(r: RecentSearch) {
-    if (onSelectLocation) {
-      onSelectLocation(r.displayName, r.lat, r.lng);
-    } else {
-      onChangeText(r.displayName);
-    }
-    setSuggestions([]);
-    setFocused(false);
-  }
-
-  const showRecents =
-    focused && value.trim().length < 3 && recents && recents.length > 0;
-  const showSuggestions = focused && suggestions.length > 0 && !showRecents;
-
-  return (
-    <View>
-      <View
-        style={[
-          styles.searchInput,
-          {
-            backgroundColor: colors.card,
-            borderColor: focused ? colors.primary : colors.border,
-          },
-        ]}
-      >
-        <Feather name={icon} size={14} color={iconColor} />
-        <TextInput
-          style={[
-            styles.searchText,
-            { color: colors.foreground, fontFamily: "Inter_400Regular" },
-          ]}
-          placeholder={placeholder}
-          placeholderTextColor={colors.mutedForeground}
-          value={value}
-          onChangeText={onChangeText}
-          onFocus={() => setFocused(true)}
-          onBlur={handleBlur}
-        />
-        {fetchingGeo && (
-          <ActivityIndicator size="small" color={colors.mutedForeground} />
-        )}
-        {hasPinnedCoords && !fetchingGeo && (
-          <View
-            style={[
-              styles.pinnedBadge,
-              { backgroundColor: `${iconColor}22` },
-            ]}
-          >
-            <Feather name="check" size={10} color={iconColor} />
-          </View>
-        )}
-        {value.length > 0 && !fetchingGeo && (
-          <Pressable onPress={handleClear}>
-            <Feather name="x" size={14} color={colors.mutedForeground} />
-          </Pressable>
-        )}
-        {onMapPress && Platform.OS !== "web" && (
-          <Pressable
-            onPress={onMapPress}
-            hitSlop={8}
-            style={[
-              styles.mapBtn,
-              {
-                backgroundColor: hasPinnedCoords
-                  ? `${iconColor}22`
-                  : `${colors.mutedForeground}18`,
-              },
-            ]}
-          >
-            <Feather
-              name="map"
-              size={14}
-              color={hasPinnedCoords ? iconColor : colors.mutedForeground}
-            />
-          </Pressable>
-        )}
-      </View>
-      {showRecents && (
-        <View
-          style={[
-            styles.suggestions,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View
-            style={[
-              styles.recentsHeader,
-              { borderBottomColor: colors.border },
-            ]}
-          >
-            <Feather name="clock" size={11} color={colors.mutedForeground} />
-            <Text
-              style={[
-                styles.recentsHeaderText,
-                {
-                  color: colors.mutedForeground,
-                  fontFamily: "Inter_600SemiBold",
-                },
-              ]}
-            >
-              Recent
-            </Text>
-          </View>
-          {recents!.map((r) => (
-            <Pressable
-              key={r.displayName}
-              style={[
-                styles.suggestionItem,
-                { borderBottomColor: colors.border },
-              ]}
-              onPress={() => handlePickRecent(r)}
-            >
-              <Feather name="rotate-ccw" size={12} color={colors.mutedForeground} />
-              <Text
-                style={[
-                  styles.suggestionText,
-                  { color: colors.foreground, fontFamily: "Inter_400Regular" },
-                ]}
-                numberOfLines={2}
-              >
-                {r.displayName}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      {showSuggestions && (
-        <View
-          style={[
-            styles.suggestions,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          {suggestions.map((s) => (
-            <Pressable
-              key={`${s.lat},${s.lon}`}
-              style={[
-                styles.suggestionItem,
-                { borderBottomColor: colors.border },
-              ]}
-              onPress={() => handlePickSuggestion(s)}
-            >
-              <Feather name="map-pin" size={12} color={colors.mutedForeground} />
-              <Text
-                style={[
-                  styles.suggestionText,
-                  { color: colors.foreground, fontFamily: "Inter_400Regular" },
-                ]}
-                numberOfLines={2}
-              >
-                {s.display_name}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
+const DEFAULT_ORIGIN_LAT = 19.076;
+const DEFAULT_ORIGIN_LNG = 72.8777;
+const DEFAULT_DEST_LAT = 19.059;
+const DEFAULT_DEST_LNG = 72.8394;
 
 export default function FindRidesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { mode, setMode } = useMode();
+  const { isDemoMode } = useDemoMode();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const [fromText, setFromText] = useState("");
@@ -920,7 +678,6 @@ export default function FindRidesScreen() {
               placeholder="From — your current location"
               icon="circle"
               iconColor={colors.success}
-              colors={colors}
               hasPinnedCoords={!!fromCoords}
               onMapPress={() => setMapPicker("from")}
               recents={recents}
@@ -933,7 +690,6 @@ export default function FindRidesScreen() {
               placeholder="To — destination"
               icon="map-pin"
               iconColor={colors.destructive}
-              colors={colors}
               hasPinnedCoords={!!toCoords}
               onMapPress={() => setMapPicker("to")}
               recents={recents}
@@ -1024,6 +780,27 @@ export default function FindRidesScreen() {
                     >
                       Try a different time or destination
                     </Text>
+                    {isDemoMode && (
+                      <View
+                        style={[
+                          styles.demoBanner,
+                          {
+                            backgroundColor: `${colors.primary}18`,
+                            borderColor: `${colors.primary}44`,
+                          },
+                        ]}
+                      >
+                        <Feather name="zap" size={14} color={colors.primary} />
+                        <Text
+                          style={[
+                            styles.demoBannerText,
+                            { color: colors.primary, fontFamily: "Inter_400Regular" },
+                          ]}
+                        >
+                          Demo Mode: log in as a driver to post trips, then search as a passenger to test the full booking flow.
+                        </Text>
+                      </View>
+                    )}
                   </>
                 ) : (
                   <>
@@ -1294,4 +1071,16 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 18, marginTop: 8 },
   emptyText: { fontSize: 14, textAlign: "center", paddingHorizontal: 32 },
+  demoBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 8,
+    marginHorizontal: 8,
+  },
+  demoBannerText: { fontSize: 13, flex: 1, lineHeight: 18 },
 });

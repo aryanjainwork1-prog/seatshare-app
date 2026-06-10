@@ -36,9 +36,10 @@ import {
 } from "@workspace/api-client-react";
 import type { Booking } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
-import { BANGALORE_AREAS } from "@/constants/locations";
+import { MUMBAI_AREAS } from "@/constants/locations";
 import { DriverSelfMap } from "@/components/DriverSelfMap";
 
 function LocationInput({
@@ -58,7 +59,7 @@ function LocationInput({
 }) {
   const [focused, setFocused] = useState(false);
   const suggestions = value.trim().length >= 2
-    ? BANGALORE_AREAS.filter((a) => a.toLowerCase().includes(value.toLowerCase())).slice(0, 4)
+    ? MUMBAI_AREAS.filter((a) => a.toLowerCase().includes(value.toLowerCase())).slice(0, 4)
     : [];
 
   return (
@@ -100,6 +101,7 @@ export default function DriverScreen() {
   const insets = useSafeAreaInsets();
   const { user, accessToken } = useAuth();
   const { mode, setMode } = useMode();
+  const { isDemoMode } = useDemoMode();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const [showPublishForm, setShowPublishForm] = useState(false);
@@ -305,10 +307,10 @@ export default function DriverScreen() {
       geocodeAddress(formTo),
     ]);
 
-    const originLat = fromCoords?.lat ?? 12.9716;
-    const originLng = fromCoords?.lng ?? 77.5946;
-    const destLat = toCoords?.lat ?? 13.0827;
-    const destLng = toCoords?.lng ?? 80.2707;
+    const originLat = fromCoords?.lat ?? 19.076;
+    const originLng = fromCoords?.lng ?? 72.8777;
+    const destLat = toCoords?.lat ?? 19.059;
+    const destLng = toCoords?.lng ?? 72.8394;
 
     try {
       await createTripMutation.mutateAsync({
@@ -426,6 +428,15 @@ export default function DriverScreen() {
           disabled={updateProfileMutation.isPending}
         />
       </View>
+
+      {isDemoMode && (
+        <View style={[styles.demoBanner, { backgroundColor: `${colors.primary}18`, borderColor: `${colors.primary}44` }]}>
+          <Feather name="zap" size={13} color={colors.primary} />
+          <Text style={[styles.demoBannerText, { color: colors.primary, fontFamily: "Inter_400Regular" }]}>
+            Demo Mode — post a trip below, then log in as the passenger demo account to test the full booking flow.
+          </Text>
+        </View>
+      )}
 
       {displayIsOnline && currentLocation && (
         <View style={styles.mapSection}>
@@ -756,6 +767,18 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 13, textAlign: "center" },
   promptTitle: { fontSize: 20 },
   promptText: { fontSize: 14 },
+  demoBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  demoBannerText: { fontSize: 13, flex: 1, lineHeight: 18 },
   profileLink: { fontSize: 14 },
   switchBtn: {
     paddingHorizontal: 24,

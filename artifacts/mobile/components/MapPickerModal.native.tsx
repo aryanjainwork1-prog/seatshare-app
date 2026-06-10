@@ -34,8 +34,8 @@ export function MapPickerModal({
   visible,
   onClose,
   onConfirm,
-  initialLat = 12.9716,
-  initialLng = 77.5946,
+  initialLat = 19.076,
+  initialLng = 72.8777,
   title,
   pinColor,
 }: MapPickerModalProps) {

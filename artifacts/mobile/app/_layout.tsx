@@ -18,6 +18,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import "@/lib/backgroundLocation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { DemoModeProvider } from "@/context/DemoModeContext";
 import { ModeProvider } from "@/context/ModeContext";
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -100,11 +101,13 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <ModeProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
+              <DemoModeProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </DemoModeProvider>
             </ModeProvider>
           </AuthProvider>
         </QueryClientProvider>

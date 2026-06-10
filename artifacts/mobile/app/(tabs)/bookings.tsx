@@ -64,7 +64,7 @@ export default function BookingsScreen() {
   const [comment, setComment] = useState("");
 
   const { data: ratingsData } = useListRatings(
-    { raterId: user?.id, limit: 200 },
+    { ratedId: user?.id, limit: 200 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { query: { enabled: !!user?.id } as any },
   );

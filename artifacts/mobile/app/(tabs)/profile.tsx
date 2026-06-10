@@ -1,6 +1,6 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useUpdateMe } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -27,9 +28,32 @@ export default function ProfileScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  const { isDemoMode, toggleDemoMode } = useDemoMode();
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [emailInput, setEmailInput] = useState(user?.email ?? "");
+
+  function handleVersionTap() {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 2500);
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      toggleDemoMode();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        isDemoMode ? "Demo Mode Off" : "Demo Mode On",
+        isDemoMode
+          ? "Demo Mode has been disabled."
+          : "Demo Mode enabled. Use demo accounts to test the full ride-sharing flow.",
+      );
+    }
+  }
 
   const updateMeMutation = useUpdateMe();
 
@@ -301,6 +325,21 @@ export default function ProfileScreen() {
           Sign Out
         </Text>
       </Pressable>
+
+      {isDemoMode && (
+        <View style={[styles.demoBadge, { backgroundColor: `${colors.primary}18`, borderColor: `${colors.primary}44` }]}>
+          <Feather name="zap" size={12} color={colors.primary} />
+          <Text style={[styles.demoBadgeText, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+            Demo Mode Active
+          </Text>
+        </View>
+      )}
+
+      <Pressable onPress={handleVersionTap} hitSlop={12} style={styles.versionLabel}>
+        <Text style={[styles.versionText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          SeatShare v1.0.0
+        </Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -441,4 +480,21 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   logoutText: { fontSize: 15 },
+  demoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  demoBadgeText: { fontSize: 13 },
+  versionLabel: {
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  versionText: { fontSize: 12 },
 });
