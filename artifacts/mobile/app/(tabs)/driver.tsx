@@ -61,6 +61,10 @@ const DEPARTURE_OPTIONS = [
   { label: "In 2 hrs", offsetMs: 2 * 60 * 60 * 1000 },
 ];
 
+/** Thresholds above which the driver sees a confirmation prompt before accepting */
+const DETOUR_WARN_KM = 3;
+const DETOUR_WARN_MIN = 5;
+
 function LocationInput({
   value,
   onChangeText,
@@ -609,7 +613,40 @@ export default function DriverScreen() {
     }
   }
 
-  async function handleAccept(bookingId: number) {
+  async function handleAccept(
+    bookingId: number,
+    detourKmExtra?: number,
+    detourMinExtra?: number,
+  ) {
+    const isSignificantDetour =
+      detourKmExtra != null &&
+      detourMinExtra != null &&
+      (detourKmExtra > DETOUR_WARN_KM || detourMinExtra > DETOUR_WARN_MIN);
+
+    if (isSignificantDetour) {
+      Alert.alert(
+        "Significant Detour",
+        `This pickup adds ${detourKmExtra!.toFixed(1)} km and ${detourMinExtra!} min for your current passengers. Accept anyway?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Accept",
+            style: "destructive",
+            onPress: async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                await acceptBookingMutation.mutateAsync({ id: bookingId, data: {} });
+                await Promise.all([refetchBookings(), refetchTrips(), refetchAcceptedBookings()]);
+              } catch {
+                Alert.alert("Error", "Could not accept booking");
+              }
+            },
+          },
+        ],
+      );
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await acceptBookingMutation.mutateAsync({ id: bookingId, data: {} });
@@ -1292,7 +1329,7 @@ export default function DriverScreen() {
                 <View style={styles.bookingActions}>
                   <Pressable
                     style={[styles.actionBtn, { backgroundColor: `${colors.success}22`, borderColor: colors.success }]}
-                    onPress={() => handleAccept(booking.id)}
+                    onPress={() => handleAccept(booking.id, detourKmExtra ?? undefined, detourMinExtra ?? undefined)}
                     disabled={acceptBookingMutation.isPending}
                   >
                     <Feather name="check" size={18} color={colors.success} />
