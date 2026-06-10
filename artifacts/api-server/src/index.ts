@@ -2,6 +2,7 @@ import { createServer } from "http";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { setupWebSocket } from "./lib/websocket";
+import { startStalenessSweep } from "./lib/staleness-sweep";
 
 const rawPort = process.env["PORT"];
 
@@ -20,6 +21,7 @@ if (Number.isNaN(port) || port <= 0) {
 const server = createServer(app);
 
 setupWebSocket(server);
+startStalenessSweep();
 
 server.listen(port, () => {
   logger.info({ port }, "Server listening");
