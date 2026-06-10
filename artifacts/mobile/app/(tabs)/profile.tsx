@@ -385,55 +385,87 @@ export default function ProfileScreen() {
           </View>
         </View>
       ) : (
-        <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.infoRow}>
-            <Feather name="phone" size={15} color={colors.mutedForeground} />
-            <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Phone</Text>
-            <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{user?.phone}</Text>
-          </View>
-          <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
-          <View style={styles.infoRow}>
-            <Feather name="mail" size={15} color={colors.mutedForeground} />
-            <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Email</Text>
-            <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{user?.email ?? "—"}</Text>
-          </View>
-          {(user?.workplace || user?.officeLocation) && (
-            <>
-              <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
-              <View style={styles.infoRow}>
-                <Feather name="briefcase" size={15} color={colors.mutedForeground} />
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Work</Text>
+        <>
+          {/* Profile completeness nudge — shown when key passenger details are missing */}
+          {isPassenger && (!user?.workplace && !user?.age && !user?.gender) && (
+            <Pressable
+              style={[styles.completionNudge, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}33` }]}
+              onPress={() => setEditing(true)}
+            >
+              <View style={[styles.completionIcon, { backgroundColor: `${colors.primary}20` }]}>
+                <Feather name="user-check" size={16} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.completionTitle, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+                  Complete your profile
+                </Text>
+                <Text style={[styles.completionSub, { color: colors.primary, fontFamily: "Inter_400Regular", opacity: 0.8 }]}>
+                  Drivers see your workplace and personal details on ride requests — complete your profile to get more rides accepted.
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.primary} />
+            </Pressable>
+          )}
+
+          <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.infoRow}>
+              <Feather name="phone" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Phone</Text>
+              <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{user?.phone}</Text>
+            </View>
+            <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
+            <View style={styles.infoRow}>
+              <Feather name="mail" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Email</Text>
+              <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{user?.email ?? "—"}</Text>
+            </View>
+            <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
+
+            {/* Workplace row — always visible; tappable to open edit when empty */}
+            <Pressable style={styles.infoRow} onPress={!user?.workplace && !user?.officeLocation ? () => setEditing(true) : undefined}>
+              <Feather name="briefcase" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Work</Text>
+              {(user?.workplace || user?.officeLocation) ? (
                 <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
                   {[user?.workplace, user?.officeLocation].filter(Boolean).join(" · ")}
                 </Text>
-              </View>
-            </>
-          )}
-          {(user?.age || user?.gender) && (
-            <>
-              <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
-              <View style={styles.infoRow}>
-                <Feather name="user" size={15} color={colors.mutedForeground} />
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>About</Text>
+              ) : (
+                <Text style={[styles.infoValue, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  Tap to add workplace
+                </Text>
+              )}
+            </Pressable>
+            <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
+
+            {/* Age / gender row — always visible; tappable to open edit when empty */}
+            <Pressable style={styles.infoRow} onPress={!user?.age && !user?.gender ? () => setEditing(true) : undefined}>
+              <Feather name="user" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>About</Text>
+              {(user?.age || user?.gender) ? (
                 <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                  {[user?.age ? `${user.age} yrs` : null, user?.gender === "M" ? "Male" : user?.gender === "F" ? "Female" : null].filter(Boolean).join(" · ") || "—"}
+                  {[user?.age ? `${user.age} yrs` : null, user?.gender === "M" ? "Male" : user?.gender === "F" ? "Female" : null].filter(Boolean).join(" · ")}
                 </Text>
-              </View>
-            </>
-          )}
-          {user?.bio && (
-            <>
-              <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
-              <View style={styles.infoRow}>
-                <Feather name="file-text" size={15} color={colors.mutedForeground} />
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Bio</Text>
-                <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_400Regular", textAlign: "left" }]}>
-                  {user.bio}
+              ) : (
+                <Text style={[styles.infoValue, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  Tap to add age &amp; gender
                 </Text>
-              </View>
-            </>
-          )}
-        </View>
+              )}
+            </Pressable>
+
+            {user?.bio && (
+              <>
+                <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
+                <View style={styles.infoRow}>
+                  <Feather name="file-text" size={15} color={colors.mutedForeground} />
+                  <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Bio</Text>
+                  <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_400Regular", textAlign: "left" }]}>
+                    {user.bio}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </>
       )}
 
       <Pressable
@@ -586,6 +618,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   saveBtnText: { fontSize: 15 },
+  completionNudge: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  completionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  completionTitle: { fontSize: 14, marginBottom: 2 },
+  completionSub: { fontSize: 12, lineHeight: 17 },
   infoCard: {
     marginHorizontal: 16,
     borderRadius: 14,
