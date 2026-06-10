@@ -140,6 +140,27 @@ export const GetMeResponse = zod.object({
 
 
 /**
+ * @summary Update current user's profile
+ */
+export const UpdateMeBody = zod.object({
+  "name": zod.string().optional(),
+  "email": zod.string().optional(),
+  "avatarUrl": zod.string().optional()
+})
+
+export const UpdateMeResponse = zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Register Expo push notification token for current user
  */
 export const RegisterPushTokenBody = zod.object({

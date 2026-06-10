@@ -17,10 +17,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useUpdateUser } from "@workspace/api-client-react";
+import { useUpdateMe } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { BANGALORE_AREAS } from "@/constants/locations";
+
+const IS_DEV = __DEV__ || process.env.NODE_ENV === "development";
 
 const COMMUTE_TYPES = [
   { id: "daily", label: "Daily", icon: "repeat" },
@@ -40,7 +42,7 @@ export default function OnboardingScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, updateUser } = useAuth();
-  const updateUserMutation = useUpdateUser();
+  const updateMeMutation = useUpdateMe();
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -85,8 +87,7 @@ export default function OnboardingScreen() {
     setSaving(true);
     try {
       if (user?.id && (name !== user.name || email !== user.email)) {
-        const updated = await updateUserMutation.mutateAsync({
-          id: user.id,
+        const updated = await updateMeMutation.mutateAsync({
           data: {
             name: name.trim() || undefined,
             email: email.trim() || undefined,
@@ -100,14 +101,19 @@ export default function OnboardingScreen() {
         JSON.stringify({ homeArea, destination, commuteType, travelTime }),
       );
       if (email.trim()) {
-        await AsyncStorage.setItem("seatshare_email_verified", "pending");
+        // In dev mode, skip email verification so onboarding completes immediately
+        await AsyncStorage.setItem(
+          "seatshare_email_verified",
+          IS_DEV ? "dev_skip" : "pending",
+        );
       } else {
         await AsyncStorage.setItem("seatshare_email_verified", "none");
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/");
-    } catch {
-      Alert.alert("Error", "Could not save your profile. Please try again.");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      Alert.alert("Error", "Could not save your profile. " + msg);
     } finally {
       setSaving(false);
     }

@@ -14,6 +14,7 @@ import statsRouter from "./stats";
 import matchRouter from "./match";
 import adminLogsRouter from "./admin-logs";
 import pushTokenRouter from "./push-token";
+import meRouter from "./me";
 
 const router: IRouter = Router();
 
@@ -25,6 +26,7 @@ router.use(authRouter);
 router.use(requireAuth);
 
 // Mixed-role routes (passenger + driver + admin can access)
+router.use(meRouter);        // PATCH /me — self-profile update
 router.use(tripsRouter);
 router.use(bookingsRouter);
 router.use(paymentsRouter);

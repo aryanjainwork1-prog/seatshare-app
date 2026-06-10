@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useUpdateUser } from "@workspace/api-client-react";
+import { useUpdateMe } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
@@ -31,7 +31,7 @@ export default function ProfileScreen() {
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [emailInput, setEmailInput] = useState(user?.email ?? "");
 
-  const updateUserMutation = useUpdateUser();
+  const updateMeMutation = useUpdateMe();
 
   useEffect(() => {
     setNameInput(user?.name ?? "");
@@ -48,8 +48,7 @@ export default function ProfileScreen() {
   async function handleSave() {
     if (!user?.id) return;
     try {
-      const updated = await updateUserMutation.mutateAsync({
-        id: user.id,
+      const updated = await updateMeMutation.mutateAsync({
         data: { name: nameInput || undefined, email: emailInput || undefined },
       });
       await updateUser(updated);
@@ -248,12 +247,12 @@ export default function ProfileScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.saveBtn,
-                { backgroundColor: colors.primary, flex: 1, opacity: pressed || updateUserMutation.isPending ? 0.8 : 1 },
+                { backgroundColor: colors.primary, flex: 1, opacity: pressed || updateMeMutation.isPending ? 0.8 : 1 },
               ]}
               onPress={handleSave}
-              disabled={updateUserMutation.isPending}
+              disabled={updateMeMutation.isPending}
             >
-              {updateUserMutation.isPending ? (
+              {updateMeMutation.isPending ? (
                 <ActivityIndicator color={colors.primaryForeground} />
               ) : (
                 <Text style={[styles.saveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>

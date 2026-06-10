@@ -172,13 +172,13 @@ export default function FindRidesScreen() {
   const [mapPicker, setMapPicker] = useState<null | "from" | "to">(null);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const [emailBanner, setEmailBanner] = useState<"pending" | null>(null);
+  const [emailBanner, setEmailBanner] = useState<"pending" | "dev_skip" | null>(null);
 
   const matchMutation = useMatchDrivers();
 
   useEffect(() => {
     AsyncStorage.getItem("seatshare_email_verified").then((v) => {
-      if (v === "pending") setEmailBanner("pending");
+      if (v === "pending" || v === "dev_skip") setEmailBanner(v);
     });
     AsyncStorage.getItem("seatshare_onboarding_prefs").then((raw) => {
       if (!raw) return;
@@ -526,6 +526,31 @@ export default function FindRidesScreen() {
           </Text>
           <Pressable onPress={dismissEmailBanner}>
             <Feather name="x" size={14} color={colors.primary} />
+          </Pressable>
+        </View>
+      )}
+
+      {emailBanner === "dev_skip" && (
+        <View
+          style={[
+            styles.banner,
+            {
+              backgroundColor: `${colors.destructive}18`,
+              borderBottomColor: `${colors.destructive}33`,
+            },
+          ]}
+        >
+          <Feather name="alert-triangle" size={14} color={colors.destructive} />
+          <Text
+            style={[
+              styles.bannerText,
+              { color: colors.destructive, fontFamily: "Inter_400Regular" },
+            ]}
+          >
+            Email verification disabled in development mode
+          </Text>
+          <Pressable onPress={dismissEmailBanner}>
+            <Feather name="x" size={14} color={colors.destructive} />
           </Pressable>
         </View>
       )}

@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useRef } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 import { etaMinutes, haversineKm } from "@/hooks/useDriverLocation";
@@ -12,30 +12,6 @@ interface LiveDriverMapProps {
   pickupLng: number;
   isConnected: boolean;
   updatedAt?: string | null;
-}
-
-// Native map component — only rendered when Platform.OS !== "web"
-let MapView: React.ComponentType<{
-  style?: object;
-  region?: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
-  children?: React.ReactNode;
-}> | null = null;
-let Marker: React.ComponentType<{
-  coordinate: { latitude: number; longitude: number };
-  title?: string;
-  pinColor?: string;
-  children?: React.ReactNode;
-}> | null = null;
-
-if (Platform.OS !== "web") {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Maps = require("react-native-maps");
-    MapView = Maps.default;
-    Marker = Maps.Marker;
-  } catch {
-    // react-native-maps not available
-  }
 }
 
 export function LiveDriverMap({
@@ -52,53 +28,6 @@ export function LiveDriverMap({
   const lastUpdated = updatedAt ? new Date(updatedAt) : null;
   const secondsAgo = lastUpdated ? Math.floor((Date.now() - lastUpdated.getTime()) / 1000) : null;
 
-  if (Platform.OS !== "web" && MapView && Marker) {
-    const midLat = (driverLat + pickupLat) / 2;
-    const midLng = (driverLng + pickupLng) / 2;
-    const latDelta = Math.abs(driverLat - pickupLat) * 2.5 + 0.01;
-    const lngDelta = Math.abs(driverLng - pickupLng) * 2.5 + 0.01;
-
-    return (
-      <View style={[styles.container, { borderColor: colors.border }]}>
-        <View style={styles.statusRow}>
-          <View style={[styles.dot, { backgroundColor: isConnected ? colors.success : colors.mutedForeground }]} />
-          <Text style={[styles.statusText, { color: isConnected ? colors.success : colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {isConnected ? "Live tracking" : "Connecting…"}
-          </Text>
-          {secondsAgo !== null && (
-            <Text style={[styles.updatedText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              · {secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`}
-            </Text>
-          )}
-        </View>
-
-        <MapView
-          style={styles.map}
-          region={{
-            latitude: midLat,
-            longitude: midLng,
-            latitudeDelta: latDelta,
-            longitudeDelta: lngDelta,
-          }}
-        >
-          <Marker
-            coordinate={{ latitude: driverLat, longitude: driverLng }}
-            title="Driver"
-            pinColor="#0080ff"
-          />
-          <Marker
-            coordinate={{ latitude: pickupLat, longitude: pickupLng }}
-            title="Your pickup"
-            pinColor="#16a34a"
-          />
-        </MapView>
-
-        <ETABanner eta={eta} distKm={distKm} colors={colors} />
-      </View>
-    );
-  }
-
-  // Web fallback: coordinate card
   return (
     <View style={[styles.container, { borderColor: colors.border }]}>
       <View style={styles.statusRow}>
@@ -140,29 +69,15 @@ export function LiveDriverMap({
         </View>
       </View>
 
-      <ETABanner eta={eta} distKm={distKm} colors={colors} />
-    </View>
-  );
-}
-
-function ETABanner({
-  eta,
-  distKm,
-  colors,
-}: {
-  eta: number;
-  distKm: number;
-  colors: ReturnType<typeof useColors>;
-}) {
-  return (
-    <View style={[styles.etaBanner, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
-      <Feather name="clock" size={15} color={colors.primary} />
-      <Text style={[styles.etaText, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
-        ~{eta} min away
-      </Text>
-      <Text style={[styles.etaDist, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-        ({distKm.toFixed(1)} km)
-      </Text>
+      <View style={[styles.etaBanner, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
+        <Feather name="clock" size={15} color={colors.primary} />
+        <Text style={[styles.etaText, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+          ~{eta} min away
+        </Text>
+        <Text style={[styles.etaDist, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          ({distKm.toFixed(1)} km)
+        </Text>
+      </View>
     </View>
   );
 }
@@ -188,10 +103,6 @@ const styles = StyleSheet.create({
   },
   statusText: { fontSize: 13 },
   updatedText: { fontSize: 12 },
-  map: {
-    width: "100%",
-    height: 220,
-  },
   coordCard: {
     margin: 12,
     borderRadius: 12,

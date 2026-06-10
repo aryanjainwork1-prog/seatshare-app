@@ -144,6 +144,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  /me:
+    patch:
+      operationId: updateMe
+      summary: Update current user's profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+
   /me/push-token:
     patch:
       operationId: registerPushToken
