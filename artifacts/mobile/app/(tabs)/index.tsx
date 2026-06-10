@@ -163,6 +163,12 @@ export default function FindRidesScreen() {
         // ignore
       }
     });
+    AsyncStorage.getItem("seatshare_last_from_address").then((val) => {
+      if (val) setFromText(val);
+    });
+    AsyncStorage.getItem("seatshare_last_to_address").then((val) => {
+      if (val) setToText(val);
+    });
   }, []);
 
   async function dismissEmailBanner() {
@@ -174,12 +180,14 @@ export default function FindRidesScreen() {
     setFromText(t);
     setFromCoords(null);
     AsyncStorage.removeItem("seatshare_last_from_coords").catch(() => {});
+    AsyncStorage.removeItem("seatshare_last_from_address").catch(() => {});
   }
 
   function handleToTextChange(t: string) {
     setToText(t);
     setToCoords(null);
     AsyncStorage.removeItem("seatshare_last_to_coords").catch(() => {});
+    AsyncStorage.removeItem("seatshare_last_to_address").catch(() => {});
   }
 
   function handleFromSelect(text: string, lat: number, lng: number) {
@@ -202,12 +210,14 @@ export default function FindRidesScreen() {
       const coords = { lat: picked.lat, lng: picked.lng };
       setFromCoords(coords);
       AsyncStorage.setItem("seatshare_last_from_coords", JSON.stringify(coords)).catch(() => {});
+      AsyncStorage.setItem("seatshare_last_from_address", picked.address).catch(() => {});
       saveRecent({ displayName: picked.address, lat: picked.lat, lng: picked.lng });
     } else if (mapPicker === "to") {
       setToText(picked.address);
       const coords = { lat: picked.lat, lng: picked.lng };
       setToCoords(coords);
       AsyncStorage.setItem("seatshare_last_to_coords", JSON.stringify(coords)).catch(() => {});
+      AsyncStorage.setItem("seatshare_last_to_address", picked.address).catch(() => {});
       saveRecent({ displayName: picked.address, lat: picked.lat, lng: picked.lng });
     }
     setMapPicker(null);
