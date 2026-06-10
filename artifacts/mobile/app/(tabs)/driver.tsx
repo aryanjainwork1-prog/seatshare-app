@@ -8,6 +8,7 @@ import {
   Alert,
   AppState,
   FlatList,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -41,6 +42,7 @@ import {
 } from "@workspace/api-client-react";
 import type { Booking } from "@workspace/api-client-react";
 import { haversineKm } from "@/hooks/useDriverLocation";
+import { distanceKm, etaMinutes } from "@/lib/utils/haversine";
 import { useAuth } from "@/context/AuthContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useMode } from "@/context/ModeContext";
@@ -181,6 +183,24 @@ export default function DriverScreen() {
   const pendingBookings = (bookingsData?.data ?? []).filter((b) =>
     myTripIds.includes(b.tripId),
   );
+
+  const { data: acceptedBookingsData, refetch: refetchAcceptedBookings } = useListBookings(
+    { status: "accepted", limit: 50 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { query: { enabled: !!driverProfileId } as any },
+  );
+  const acceptedBookings = (acceptedBookingsData?.data ?? []).filter((b) =>
+    myTripIds.includes(b.tripId),
+  );
+
+  // Active trip: departure time has passed AND has at least one accepted booking
+  const activeTrip = (tripsData?.data ?? []).find((t) => {
+    const departed = new Date(t.departureTime) <= new Date();
+    return departed && acceptedBookings.some((b) => b.tripId === t.id);
+  }) ?? null;
+  const activeTripAccepted = activeTrip
+    ? acceptedBookings.filter((b) => b.tripId === activeTrip.id)
+    : [];
 
   const { data: vehiclesData, refetch: refetchVehicles } = useListVehicles(
     { driverProfileId, limit: 10 },
@@ -487,7 +507,7 @@ export default function DriverScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await acceptBookingMutation.mutateAsync({ id: bookingId, data: {} });
-      await refetchBookings();
+      await Promise.all([refetchBookings(), refetchTrips(), refetchAcceptedBookings()]);
     } catch {
       Alert.alert("Error", "Could not accept booking");
     }
@@ -1013,17 +1033,48 @@ export default function DriverScreen() {
             </View>
           )}
           {pendingBookings.map((booking: Booking) => {
-            const trip = booking.trip as { originLat?: number | null; originLng?: number | null; destLat?: number | null; destLng?: number | null } | undefined;
+            const bTrip = booking.trip as { originLat?: number | null; originLng?: number | null; destLat?: number | null; destLng?: number | null } | undefined;
             const pickupLat = booking.pickupLat;
             const pickupLng = booking.pickupLng;
-            const oLat = trip?.originLat;
-            const oLng = trip?.originLng;
-            const dLat = trip?.destLat;
-            const dLng = trip?.destLng;
 
-            // Compute perpendicular deviation of pickup from trip route segment
-            let deviationKm: number | null = null;
-            if (pickupLat != null && pickupLng != null && oLat != null && oLng != null && dLat != null && dLng != null) {
+            // ── Active-trip detour deviation ────────────────────────────────
+            let detourKmExtra: number | null = null;
+            let detourMinExtra: number | null = null;
+            let mapsUrl: string | null = null;
+
+            if (activeTrip) {
+              const curLat = currentLocation?.lat ?? activeTrip.originLat;
+              const curLng = currentLocation?.lng ?? activeTrip.originLng;
+              // Next stop = first accepted passenger's dropoff, or final destination
+              const nextStopLat = activeTripAccepted[0]?.dropoffLat ?? activeTrip.destLat;
+              const nextStopLng = activeTripAccepted[0]?.dropoffLng ?? activeTrip.destLng;
+
+              const directKm = distanceKm(curLat, curLng, nextStopLat, nextStopLng);
+              const viaPickupKm =
+                distanceKm(curLat, curLng, pickupLat, pickupLng) +
+                distanceKm(pickupLat, pickupLng, nextStopLat, nextStopLng);
+              detourKmExtra = Math.max(0, viaPickupKm - directKm);
+              detourMinExtra = etaMinutes(detourKmExtra);
+
+              // Build Google Maps deep-link: current → new pickup → existing dropoffs → destination
+              const waypoints = [
+                `${pickupLat},${pickupLng}`,
+                ...activeTripAccepted.map((b) => `${b.dropoffLat},${b.dropoffLng}`),
+              ].join("|");
+              mapsUrl =
+                `https://www.google.com/maps/dir/?api=1` +
+                `&origin=${curLat},${curLng}` +
+                `&destination=${activeTrip.destLat},${activeTrip.destLng}` +
+                `&waypoints=${encodeURIComponent(waypoints)}`;
+            }
+
+            // ── Perpendicular deviation (no active trip) ────────────────────
+            const oLat = bTrip?.originLat;
+            const oLng = bTrip?.originLng;
+            const dLat = bTrip?.destLat;
+            const dLng = bTrip?.destLng;
+            let perpendicularKm: number | null = null;
+            if (!activeTrip && oLat != null && oLng != null && dLat != null && dLng != null) {
               const cosLat = Math.cos(((oLat + dLat) / 2) * Math.PI / 180);
               const ax = oLng * cosLat * 111, ay = oLat * 111;
               const bx = dLng * cosLat * 111, by = dLat * 111;
@@ -1034,55 +1085,90 @@ export default function DriverScreen() {
                 let t = ((px - ax) * dx + (py - ay) * dy) / len2;
                 t = Math.max(0, Math.min(1, t));
                 const cx = ax + t * dx, cy = ay + t * dy;
-                deviationKm = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+                perpendicularKm = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
               } else {
-                deviationKm = haversineKm(pickupLat, pickupLng, oLat, oLng);
+                perpendicularKm = haversineKm(pickupLat, pickupLng, oLat, oLng);
               }
             }
-            const hasDeviation = deviationKm != null && deviationKm > 1.5;
-            const deviationColor = deviationKm != null && deviationKm > 4 ? colors.destructive : "#d97706";
+            const hasPerpendicularDeviation = perpendicularKm != null && perpendicularKm > 1.5;
+            const perpendicularColor =
+              perpendicularKm != null && perpendicularKm > 4 ? colors.destructive : "#d97706";
 
             return (
-            <View
-              key={booking.id}
-              style={[styles.bookingCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <View style={styles.bookingInfo}>
-                <Text style={[styles.bookingPassenger, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                  {booking.passenger?.name ?? booking.passenger?.phone ?? "Passenger"}
-                </Text>
-                <Text style={[styles.bookingRoute, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]} numberOfLines={1}>
-                  {booking.pickupAddress} → {booking.dropoffAddress}
-                </Text>
-                {hasDeviation && (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
-                    <Feather name="alert-triangle" size={11} color={deviationColor} />
-                    <Text style={{ color: deviationColor, fontSize: 11, fontFamily: "Inter_500Medium" }}>
-                      Pickup {deviationKm!.toFixed(1)} km off your route
-                    </Text>
-                  </View>
-                )}
-                <Text style={[styles.bookingFare, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
-                  ₹{booking.fare.toFixed(0)}
-                </Text>
+              <View
+                key={booking.id}
+                style={[styles.bookingCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={styles.bookingInfo}>
+                  <Text style={[styles.bookingPassenger, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    {booking.passenger?.name ?? booking.passenger?.phone ?? "Passenger"}
+                  </Text>
+                  <Text style={[styles.bookingRoute, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]} numberOfLines={1}>
+                    {booking.pickupAddress} → {booking.dropoffAddress}
+                  </Text>
+
+                  {/* Active-trip detour badges */}
+                  {activeTrip && detourKmExtra != null && detourMinExtra != null && (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                      <View style={[styles.detourBadge, { backgroundColor: `${colors.warning ?? "#d97706"}18`, borderColor: `${colors.warning ?? "#d97706"}55` }]}>
+                        <Feather name="navigation" size={10} color={colors.warning ?? "#d97706"} />
+                        <Text style={{ color: colors.warning ?? "#d97706", fontSize: 11, fontFamily: "Inter_600SemiBold" }}>
+                          +{detourKmExtra.toFixed(1)} km detour
+                        </Text>
+                      </View>
+                      <View style={[styles.detourBadge, { backgroundColor: `${colors.warning ?? "#d97706"}18`, borderColor: `${colors.warning ?? "#d97706"}55` }]}>
+                        <Feather name="clock" size={10} color={colors.warning ?? "#d97706"} />
+                        <Text style={{ color: colors.warning ?? "#d97706", fontSize: 11, fontFamily: "Inter_600SemiBold" }}>
+                          +{detourMinExtra} min delay
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Perpendicular off-route warning (no active trip) */}
+                  {hasPerpendicularDeviation && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                      <Feather name="alert-triangle" size={11} color={perpendicularColor} />
+                      <Text style={{ color: perpendicularColor, fontSize: 11, fontFamily: "Inter_500Medium" }}>
+                        Pickup {perpendicularKm!.toFixed(1)} km off your route
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text style={[styles.bookingFare, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+                    ₹{booking.fare.toFixed(0)}
+                  </Text>
+
+                  {/* View updated route button */}
+                  {activeTrip && mapsUrl && (
+                    <Pressable
+                      style={[styles.routeBtn, { borderColor: colors.primary }]}
+                      onPress={() => Linking.openURL(mapsUrl!).catch(() => {})}
+                    >
+                      <Feather name="map" size={11} color={colors.primary} />
+                      <Text style={{ color: colors.primary, fontSize: 11, fontFamily: "Inter_500Medium" }}>
+                        View updated route
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
+                <View style={styles.bookingActions}>
+                  <Pressable
+                    style={[styles.actionBtn, { backgroundColor: `${colors.success}22`, borderColor: colors.success }]}
+                    onPress={() => handleAccept(booking.id)}
+                    disabled={acceptBookingMutation.isPending}
+                  >
+                    <Feather name="check" size={18} color={colors.success} />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.actionBtn, { backgroundColor: `${colors.destructive}22`, borderColor: colors.destructive }]}
+                    onPress={() => handleReject(booking.id)}
+                    disabled={rejectBookingMutation.isPending}
+                  >
+                    <Feather name="x" size={18} color={colors.destructive} />
+                  </Pressable>
+                </View>
               </View>
-              <View style={styles.bookingActions}>
-                <Pressable
-                  style={[styles.actionBtn, { backgroundColor: `${colors.success}22`, borderColor: colors.success }]}
-                  onPress={() => handleAccept(booking.id)}
-                  disabled={acceptBookingMutation.isPending}
-                >
-                  <Feather name="check" size={18} color={colors.success} />
-                </Pressable>
-                <Pressable
-                  style={[styles.actionBtn, { backgroundColor: `${colors.destructive}22`, borderColor: colors.destructive }]}
-                  onPress={() => handleReject(booking.id)}
-                  disabled={rejectBookingMutation.isPending}
-                >
-                  <Feather name="x" size={18} color={colors.destructive} />
-                </Pressable>
-              </View>
-            </View>
             );
           })}
         </View>
@@ -1219,8 +1305,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 12,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 12,
+  },
+  detourBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  routeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: "flex-start",
+    marginTop: 4,
   },
   bookingInfo: { flex: 1, gap: 2 },
   bookingPassenger: { fontSize: 14 },
