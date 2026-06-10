@@ -18,14 +18,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useMatchDrivers } from "@workspace/api-client-react";
 import type { MatchResult } from "@workspace/api-client-react";
-import { useAuth } from "@/context/AuthContext";
 import { useDemoMode } from "@/context/DemoModeContext";
-import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { MapPickerModal } from "@/components/MapPickerModal";
 import type { PickedLocation } from "@/components/MapPickerModal";
 import { LocationInput } from "@/components/LocationInput";
+import { NearbyDriversMap } from "@/components/NearbyDriversMap";
 import { RoutePreviewMap } from "@/components/RoutePreviewMap";
 
 const DEFAULT_ORIGIN_LAT = 19.076;
@@ -36,8 +35,6 @@ const DEFAULT_DEST_LNG = 72.8394;
 export default function FindRidesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-  const { mode, setMode } = useMode();
   const { isDemoMode } = useDemoMode();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -54,8 +51,11 @@ export default function FindRidesScreen() {
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [emailBanner, setEmailBanner] = useState<"pending" | "dev_skip" | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyDrivers, setNearbyDrivers] = useState<MatchResult[]>([]);
 
   const matchMutation = useMatchDrivers();
+  const nearbyMutation = useMatchDrivers();
   const { recents, saveRecent } = useRecentSearches();
 
   useFocusEffect(
@@ -83,6 +83,48 @@ export default function FindRidesScreen() {
         }
       });
     }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      async function fetchNearby() {
+        let lat: number | null = null;
+        let lng: number | null = null;
+
+        if (fromCoords) {
+          lat = fromCoords.lat;
+          lng = fromCoords.lng;
+        } else if (Platform.OS !== "web") {
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === "granted") {
+              const pos = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+              });
+              lat = pos.coords.latitude;
+              lng = pos.coords.longitude;
+            }
+          } catch {
+            // ignore
+          }
+        }
+        if (lat === null || lng === null || cancelled) return;
+        setUserLocation({ lat, lng });
+        try {
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+          const result = await nearbyMutation.mutateAsync({
+            data: { passengerLat: lat, passengerLng: lng, destLat: lat, destLng: lng, maxResults: 10 },
+          });
+          if (!cancelled) setNearbyDrivers(result.matches ?? []);
+        } catch {
+          // ignore
+        }
+      }
+      fetchNearby();
+      return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fromCoords?.lat, fromCoords?.lng]),
   );
 
   useEffect(() => {
@@ -373,18 +415,24 @@ export default function FindRidesScreen() {
             </Text>
           </View>
           {item.etaMinutes !== undefined && (
-            <View style={styles.metaItem}>
-              <Feather name="clock" size={13} color={colors.mutedForeground} />
+            <View
+              style={[
+                styles.metaItem,
+                styles.etaBadge,
+                { backgroundColor: `${colors.success}1a` },
+              ]}
+            >
+              <Feather name="clock" size={13} color={colors.success} />
               <Text
                 style={[
                   styles.metaText,
                   {
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_400Regular",
+                    color: colors.success,
+                    fontFamily: "Inter_600SemiBold",
                   },
                 ]}
               >
-                {item.etaMinutes} min
+                {item.etaMinutes} min away
               </Text>
             </View>
           )}
@@ -448,8 +496,6 @@ export default function FindRidesScreen() {
     );
   }
 
-  const isDriver = user?.role === "driver";
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {emailBanner === "pending" && (
@@ -502,188 +548,12 @@ export default function FindRidesScreen() {
         </View>
       )}
 
-      {isDriver && (
-        <View
-          style={[
-            styles.modeSwitcher,
-            {
-              backgroundColor: colors.card,
-              borderBottomColor: colors.border,
-            },
-          ]}
-        >
-          <Pressable
-            style={[
-              styles.modeBtn,
-              mode === "passenger" && {
-                backgroundColor: colors.primary,
-                borderRadius: 8,
-              },
-            ]}
-            onPress={() => {
-              setMode("passenger");
-              Haptics.selectionAsync();
-            }}
-          >
-            <Feather
-              name="users"
-              size={14}
-              color={
-                mode === "passenger"
-                  ? colors.primaryForeground
-                  : colors.mutedForeground
-              }
-            />
-            <Text
-              style={[
-                styles.modeBtnText,
-                {
-                  color:
-                    mode === "passenger"
-                      ? colors.primaryForeground
-                      : colors.mutedForeground,
-                  fontFamily:
-                    mode === "passenger"
-                      ? "Inter_600SemiBold"
-                      : "Inter_400Regular",
-                },
-              ]}
-            >
-              Passenger
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[
-              styles.modeBtn,
-              mode === "driver" && {
-                backgroundColor: colors.primary,
-                borderRadius: 8,
-              },
-            ]}
-            onPress={() => {
-              setMode("driver");
-              Haptics.selectionAsync();
-            }}
-          >
-            <Feather
-              name="truck"
-              size={14}
-              color={
-                mode === "driver"
-                  ? colors.primaryForeground
-                  : colors.mutedForeground
-              }
-            />
-            <Text
-              style={[
-                styles.modeBtnText,
-                {
-                  color:
-                    mode === "driver"
-                      ? colors.primaryForeground
-                      : colors.mutedForeground,
-                  fontFamily:
-                    mode === "driver"
-                      ? "Inter_600SemiBold"
-                      : "Inter_400Regular",
-                },
-              ]}
-            >
-              Driver
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
-      {mode === "driver" ? (
-        <View
-          style={[
-            styles.driverModeView,
-            { paddingTop: isDriver ? 0 : topPad + 8 },
-          ]}
-        >
-          <View
-            style={[
-              styles.driverModeCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                marginTop: 16,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.driverModeIcon,
-                { backgroundColor: `${colors.primary}22` },
-              ]}
-            >
-              <Feather name="truck" size={28} color={colors.primary} />
-            </View>
-            <Text
-              style={[
-                styles.driverModeTitle,
-                { color: colors.foreground, fontFamily: "Inter_700Bold" },
-              ]}
-            >
-              You're in Driver Mode
-            </Text>
-            <Text
-              style={[
-                styles.driverModeSub,
-                { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
-              ]}
-            >
-              Manage your trips, go online, and accept bookings from the Drive
-              tab.
-            </Text>
-            <Pressable
-              style={[styles.driverModeBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push("/(tabs)/driver")}
-            >
-              <Feather name="zap" size={16} color={colors.primaryForeground} />
-              <Text
-                style={[
-                  styles.driverModeBtnText,
-                  {
-                    color: colors.primaryForeground,
-                    fontFamily: "Inter_600SemiBold",
-                  },
-                ]}
-              >
-                Open Driver Dashboard
-              </Text>
-            </Pressable>
-          </View>
-          <Pressable
-            style={styles.switchToPassenger}
-            onPress={() => {
-              setMode("passenger");
-              Haptics.selectionAsync();
-            }}
-          >
-            <Text
-              style={[
-                styles.switchToPassengerText,
-                { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
-              ]}
-            >
-              Looking for a ride instead?{" "}
-              <Text
-                style={{ color: colors.primary, fontFamily: "Inter_500Medium" }}
-              >
-                Switch to Passenger
-              </Text>
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
-        <>
+      <>
           <View
             style={[
               styles.searchHeader,
               {
-                paddingTop: isDriver ? 12 : topPad + 8,
+                paddingTop: topPad + 8,
                 backgroundColor: colors.background,
                 borderBottomColor: colors.border,
               },
@@ -774,6 +644,12 @@ export default function FindRidesScreen() {
                   fromLabel={fromText || "Pickup"}
                   toLabel={toText || "Drop-off"}
                 />
+              ) : !hasSearched && userLocation ? (
+                <NearbyDriversMap
+                  drivers={nearbyDrivers}
+                  userLat={userLocation.lat}
+                  userLng={userLocation.lng}
+                />
               ) : null
             }
             ListEmptyComponent={
@@ -863,8 +739,7 @@ export default function FindRidesScreen() {
               </View>
             }
           />
-        </>
-      )}
+      </>
 
       {mapPicker !== null && (
         <MapPickerModal
@@ -1066,6 +941,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+  },
+  etaBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   metaText: { fontSize: 12 },
   routeRow: { gap: 4 },
