@@ -35,6 +35,14 @@ router.post("/vehicles", async (req, res): Promise<void> => {
     return;
   }
 
+  if (req.user!.role !== "admin") {
+    const [callerProfile] = await db.select().from(driverProfilesTable).where(eq(driverProfilesTable.userId, req.user!.sub));
+    if (!callerProfile || parsed.data.driverProfileId !== callerProfile.id) {
+      res.status(403).json({ error: "Forbidden: driverProfileId does not belong to caller" });
+      return;
+    }
+  }
+
   const [vehicle] = await db.insert(vehiclesTable).values(parsed.data).returning();
   res.status(201).json(vehicle);
 });

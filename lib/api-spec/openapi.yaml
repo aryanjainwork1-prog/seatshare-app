@@ -1223,7 +1223,7 @@ components:
 
     Vehicle:
       type: object
-      required: [id, driverProfileId, make, model, year, color, licensePlate, capacity, createdAt]
+      required: [id, driverProfileId, make, model, year, color, capacity, createdAt]
       properties:
         id:
           type: integer
@@ -1239,6 +1239,7 @@ components:
           type: string
         licensePlate:
           type: string
+          nullable: true
         capacity:
           type: integer
         bodyType:

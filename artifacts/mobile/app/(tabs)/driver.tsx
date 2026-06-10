@@ -347,13 +347,13 @@ export default function DriverScreen() {
   const BODY_TYPE_FARES: Record<string, number> = { Hatchback: 70, Sedan: 100, SUV: 150, MPV: 130 };
   const BODY_TYPES = ["Hatchback", "Sedan", "SUV", "MPV"] as const;
 
-  function openCarEdit(car: { id: number; make: string; model: string; year: number; color: string; licensePlate: string; capacity: number; bodyType?: string | null; conditionNote?: string | null }) {
+  function openCarEdit(car: { id: number; make: string; model: string; year: number; color: string; licensePlate?: string | null; capacity: number; bodyType?: string | null; conditionNote?: string | null }) {
     setEditingCarId(car.id);
     setCarMake(car.make);
     setCarModel(car.model);
     setCarYear(String(car.year));
     setCarColor(car.color);
-    setCarPlate(car.licensePlate === "—" ? "" : car.licensePlate);
+    setCarPlate(car.licensePlate ?? "");
     setCarCapacity(String(car.capacity));
     setCarBodyType((car.bodyType as typeof carBodyType) ?? "Hatchback");
     setCarConditionNote(car.conditionNote ?? "");
