@@ -175,6 +175,18 @@ export default function DriverScreen() {
 
       stopForegroundTracking();
 
+      try {
+        const initial = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        setCurrentLocation({
+          lat: initial.coords.latitude,
+          lng: initial.coords.longitude,
+        });
+      } catch {
+        // ignore — watcher will set it on first fix
+      }
+
       const wsUrl = `wss://${process.env.EXPO_PUBLIC_DOMAIN}/ws?token=${accessToken}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
