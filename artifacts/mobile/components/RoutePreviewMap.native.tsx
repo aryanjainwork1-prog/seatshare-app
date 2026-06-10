@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, Polyline } from "react-native-maps";
 
 import type { MatchResult } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
@@ -65,6 +65,14 @@ export function RoutePreviewMap({
         pitchEnabled={false}
         rotateEnabled={false}
       >
+        <Polyline
+          coordinates={[
+            { latitude: fromCoords.lat, longitude: fromCoords.lng },
+            { latitude: toCoords.lat, longitude: toCoords.lng },
+          ]}
+          strokeColor="#6366f1"
+          strokeWidth={3}
+        />
         <Marker
           coordinate={{ latitude: fromCoords.lat, longitude: fromCoords.lng }}
           title={fromLabel}
