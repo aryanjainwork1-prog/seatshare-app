@@ -1,9 +1,13 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useRef } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
 import { useColors } from "@/hooks/useColors";
+
+const AnimatedMarker = Animated.createAnimatedComponent(Marker);
+
+const ANIM_DURATION = 900;
 
 interface DriverSelfMapProps {
   lat: number;
@@ -14,6 +18,38 @@ interface DriverSelfMapProps {
 export function DriverSelfMap({ lat, lng, isOnline }: DriverSelfMapProps) {
   const colors = useColors();
   const mapRef = useRef<MapView>(null);
+
+  const animCoord = useRef(new Animated.ValueXY({ x: lat, y: lng }));
+
+  const markerCoord = useRef({
+    latitude: animCoord.current.x as unknown as number,
+    longitude: animCoord.current.y as unknown as number,
+  });
+
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
+
+    Animated.timing(animCoord.current, {
+      toValue: { x: lat, y: lng },
+      duration: ANIM_DURATION,
+      useNativeDriver: false,
+    }).start();
+
+    mapRef.current?.animateToRegion(
+      {
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: 0.008,
+        longitudeDelta: 0.008,
+      },
+      ANIM_DURATION,
+    );
+  }, [lat, lng]);
 
   return (
     <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -27,7 +63,7 @@ export function DriverSelfMap({ lat, lng, isOnline }: DriverSelfMapProps) {
       <MapView
         ref={mapRef}
         style={styles.map}
-        region={{
+        initialRegion={{
           latitude: lat,
           longitude: lng,
           latitudeDelta: 0.008,
@@ -38,15 +74,15 @@ export function DriverSelfMap({ lat, lng, isOnline }: DriverSelfMapProps) {
         rotateEnabled={false}
         pitchEnabled={false}
       >
-        <Marker
-          coordinate={{ latitude: lat, longitude: lng }}
+        <AnimatedMarker
+          coordinate={markerCoord.current}
           title="You"
           anchor={{ x: 0.5, y: 0.5 }}
         >
           <View style={[styles.markerOuter, { borderColor: colors.primary }]}>
             <View style={[styles.markerInner, { backgroundColor: colors.primary }]} />
           </View>
-        </Marker>
+        </AnimatedMarker>
       </MapView>
 
       <View style={[styles.coordBar, { borderTopColor: colors.border }]}>
