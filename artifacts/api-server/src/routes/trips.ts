@@ -15,7 +15,11 @@ async function enrichTrip(trip: typeof tripsTable.$inferSelect) {
   const [profile] = await db.select().from(driverProfilesTable).where(eq(driverProfilesTable.id, trip.driverProfileId));
   if (!profile) return { ...trip, driverProfile: null };
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, profile.userId));
-  const [vehicle] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.driverProfileId, profile.id));
+  // Prefer the specific vehicle attached to this trip; fall back to driver's first vehicle
+  const vehicleQuery = trip.vehicleId
+    ? db.select().from(vehiclesTable).where(eq(vehiclesTable.id, trip.vehicleId))
+    : db.select().from(vehiclesTable).where(eq(vehiclesTable.driverProfileId, profile.id));
+  const [vehicle] = await vehicleQuery;
   return { ...trip, driverProfile: { ...profile, user: user ?? null, vehicle: vehicle ?? null } };
 }
 

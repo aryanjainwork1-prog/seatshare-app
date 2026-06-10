@@ -10,6 +10,7 @@ import type { DriverProfile } from './driverProfile';
 export interface Trip {
   id: number;
   driverProfileId: number;
+  vehicleId?: number | null;
   originAddress: string;
   destAddress: string;
   originLat: number;

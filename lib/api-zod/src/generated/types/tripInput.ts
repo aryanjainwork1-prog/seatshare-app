@@ -8,6 +8,7 @@
 
 export interface TripInput {
   driverProfileId: number;
+  vehicleId?: number | null;
   originAddress: string;
   destAddress: string;
   originLat: number;

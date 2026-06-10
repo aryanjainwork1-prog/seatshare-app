@@ -416,6 +416,7 @@ export default function DriverScreen() {
       await createTripMutation.mutateAsync({
         data: {
           driverProfileId: profileId,
+          vehicleId: selectedVehicleId ?? undefined,
           originAddress: formFrom,
           destAddress: formTo,
           originLat,

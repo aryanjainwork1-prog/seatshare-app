@@ -1291,6 +1291,9 @@ components:
           type: integer
         driverProfileId:
           type: integer
+        vehicleId:
+          type: integer
+          nullable: true
         originAddress:
           type: string
         destAddress:
@@ -1343,6 +1346,9 @@ components:
       properties:
         driverProfileId:
           type: integer
+        vehicleId:
+          type: integer
+          nullable: true
         originAddress:
           type: string
         destAddress:

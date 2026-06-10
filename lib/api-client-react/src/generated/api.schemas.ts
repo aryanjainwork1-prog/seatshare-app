@@ -157,6 +157,7 @@ export interface VehicleUpdate {
 export interface Trip {
   id: number;
   driverProfileId: number;
+  vehicleId?: number | null;
   originAddress: string;
   destAddress: string;
   originLat: number;
@@ -181,6 +182,7 @@ export interface TripList {
 
 export interface TripInput {
   driverProfileId: number;
+  vehicleId?: number | null;
   originAddress: string;
   destAddress: string;
   originLat: number;

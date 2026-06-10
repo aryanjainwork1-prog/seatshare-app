@@ -2,10 +2,12 @@ import { pgTable, integer, text, serial, timestamp, real } from "drizzle-orm/pg-
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { driverProfilesTable } from "./driver-profiles";
+import { vehiclesTable } from "./vehicles";
 
 export const tripsTable = pgTable("trips", {
   id: serial("id").primaryKey(),
   driverProfileId: integer("driver_profile_id").notNull().references(() => driverProfilesTable.id),
+  vehicleId: integer("vehicle_id").references(() => vehiclesTable.id),
   originAddress: text("origin_address").notNull(),
   destAddress: text("dest_address").notNull(),
   originLat: real("origin_lat").notNull(),

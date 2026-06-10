@@ -773,6 +773,7 @@ export const ListTripsResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -834,6 +835,7 @@ export const ListTripsResponse = zod.object({
  */
 export const CreateTripBody = zod.object({
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -857,6 +859,7 @@ export const GetTripParams = zod.object({
 export const GetTripResponse = zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -924,6 +927,7 @@ export const UpdateTripBody = zod.object({
 export const UpdateTripResponse = zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -990,6 +994,7 @@ export const CancelTripBody = zod.object({
 export const CancelTripResponse = zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -1071,6 +1076,7 @@ export const ListBookingsResponse = zod.object({
   "trip": zod.union([zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -1182,6 +1188,7 @@ export const GetBookingResponse = zod.object({
   "trip": zod.union([zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -1278,6 +1285,7 @@ export const AcceptBookingResponse = zod.object({
   "trip": zod.union([zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -1374,6 +1382,7 @@ export const RejectBookingResponse = zod.object({
   "trip": zod.union([zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -1470,6 +1479,7 @@ export const CompleteBookingResponse = zod.object({
   "trip": zod.union([zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -1566,6 +1576,7 @@ export const CancelBookingResponse = zod.object({
   "trip": zod.union([zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -1867,6 +1878,7 @@ export const GetStatsActivityResponse = zod.object({
   "recentTrips": zod.array(zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -1934,6 +1946,7 @@ export const GetStatsActivityResponse = zod.object({
   "trip": zod.union([zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
@@ -2041,6 +2054,7 @@ export const MatchDriversResponse = zod.object({
   "trip": zod.object({
   "id": zod.number(),
   "driverProfileId": zod.number(),
+  "vehicleId": zod.number().nullish(),
   "originAddress": zod.string(),
   "destAddress": zod.string(),
   "originLat": zod.number(),
