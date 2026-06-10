@@ -21,9 +21,14 @@ import type { MatchResult } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
-import { BANGALORE_AREAS } from "@/constants/locations";
 import { MapPickerModal } from "@/components/MapPickerModal";
 import type { PickedLocation } from "@/components/MapPickerModal";
+
+type GeoSuggestion = {
+  display_name: string;
+  lat: string;
+  lon: string;
+};
 
 const DEFAULT_ORIGIN_LAT = 12.9716;
 const DEFAULT_ORIGIN_LNG = 77.5946;
@@ -33,6 +38,7 @@ const DEFAULT_DEST_LNG = 80.2707;
 function LocationInput({
   value,
   onChangeText,
+  onSelectLocation,
   placeholder,
   icon,
   iconColor,
@@ -42,6 +48,7 @@ function LocationInput({
 }: {
   value: string;
   onChangeText: (t: string) => void;
+  onSelectLocation?: (text: string, lat: number, lng: number) => void;
   placeholder: string;
   icon: "circle" | "map-pin";
   iconColor: string;
@@ -50,12 +57,59 @@ function LocationInput({
   hasPinnedCoords?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
-  const suggestions =
-    value.trim().length >= 2
-      ? BANGALORE_AREAS.filter((a) =>
-          a.toLowerCase().includes(value.toLowerCase()),
-        ).slice(0, 4)
-      : [];
+  const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
+  const [fetchingGeo, setFetchingGeo] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim().length < 3) {
+      setSuggestions([]);
+      setFetchingGeo(false);
+      return;
+    }
+    setFetchingGeo(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value.trim())}&format=json&limit=5&addressdetails=0`;
+        const resp = await fetch(url, {
+          headers: { "Accept-Language": "en", "User-Agent": "SeatShare/1.0" },
+        });
+        const data = (await resp.json()) as GeoSuggestion[];
+        setSuggestions(data);
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setFetchingGeo(false);
+      }
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [value]);
+
+  function handleBlur() {
+    setTimeout(() => {
+      setFocused(false);
+    }, 200);
+  }
+
+  function handleClear() {
+    onChangeText("");
+    setSuggestions([]);
+  }
+
+  function handlePickSuggestion(s: GeoSuggestion) {
+    const lat = parseFloat(s.lat);
+    const lng = parseFloat(s.lon);
+    if (onSelectLocation) {
+      onSelectLocation(s.display_name, lat, lng);
+    } else {
+      onChangeText(s.display_name);
+    }
+    setSuggestions([]);
+    setFocused(false);
+  }
 
   return (
     <View>
@@ -79,9 +133,12 @@ function LocationInput({
           value={value}
           onChangeText={onChangeText}
           onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 150)}
+          onBlur={handleBlur}
         />
-        {hasPinnedCoords && (
+        {fetchingGeo && (
+          <ActivityIndicator size="small" color={colors.mutedForeground} />
+        )}
+        {hasPinnedCoords && !fetchingGeo && (
           <View
             style={[
               styles.pinnedBadge,
@@ -91,8 +148,8 @@ function LocationInput({
             <Feather name="check" size={10} color={iconColor} />
           </View>
         )}
-        {value.length > 0 && (
-          <Pressable onPress={() => onChangeText("")}>
+        {value.length > 0 && !fetchingGeo && (
+          <Pressable onPress={handleClear}>
             <Feather name="x" size={14} color={colors.mutedForeground} />
           </Pressable>
         )}
@@ -126,15 +183,12 @@ function LocationInput({
         >
           {suggestions.map((s) => (
             <Pressable
-              key={s}
+              key={`${s.lat},${s.lon}`}
               style={[
                 styles.suggestionItem,
                 { borderBottomColor: colors.border },
               ]}
-              onPress={() => {
-                onChangeText(s);
-                setFocused(false);
-              }}
+              onPress={() => handlePickSuggestion(s)}
             >
               <Feather name="map-pin" size={12} color={colors.mutedForeground} />
               <Text
@@ -142,8 +196,9 @@ function LocationInput({
                   styles.suggestionText,
                   { color: colors.foreground, fontFamily: "Inter_400Regular" },
                 ]}
+                numberOfLines={2}
               >
-                {s}
+                {s.display_name}
               </Text>
             </Pressable>
           ))}
@@ -208,6 +263,18 @@ export default function FindRidesScreen() {
   function handleToTextChange(t: string) {
     setToText(t);
     setToCoords(null);
+  }
+
+  function handleFromSelect(text: string, lat: number, lng: number) {
+    setFromText(text);
+    setFromCoords({ lat, lng });
+    Haptics.selectionAsync();
+  }
+
+  function handleToSelect(text: string, lat: number, lng: number) {
+    setToText(text);
+    setToCoords({ lat, lng });
+    Haptics.selectionAsync();
   }
 
   function handleMapConfirm(picked: PickedLocation) {
@@ -754,6 +821,7 @@ export default function FindRidesScreen() {
             <LocationInput
               value={fromText}
               onChangeText={handleFromTextChange}
+              onSelectLocation={handleFromSelect}
               placeholder="From — your current location"
               icon="circle"
               iconColor={colors.success}
@@ -765,6 +833,7 @@ export default function FindRidesScreen() {
             <LocationInput
               value={toText}
               onChangeText={handleToTextChange}
+              onSelectLocation={handleToSelect}
               placeholder="To — destination"
               icon="map-pin"
               iconColor={colors.destructive}
