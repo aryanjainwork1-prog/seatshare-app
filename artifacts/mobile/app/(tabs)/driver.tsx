@@ -29,6 +29,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
+  refreshToken,
   useAcceptBooking,
   useCreateDriverProfile,
   useCreateTrip,
@@ -116,7 +117,7 @@ function LocationInput({
 export default function DriverScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user, accessToken } = useAuth();
+  const { user, accessToken, login } = useAuth();
   const { mode, setMode } = useMode();
   const { isDemoMode } = useDemoMode();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -144,6 +145,7 @@ export default function DriverScreen() {
   const wsRef = useRef<WebSocket | null>(null);
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
   const appStateRef = useRef(AppState.currentState);
+  const tokenRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -165,6 +167,8 @@ export default function DriverScreen() {
   }, [driverProfile?.isOnline]);
 
   const updateProfileMutation = useUpdateDriverProfile();
+  const updateProfileMutationRef = useRef(updateProfileMutation);
+  useEffect(() => { updateProfileMutationRef.current = updateProfileMutation; }, [updateProfileMutation]);
   const createProfileMutation = useCreateDriverProfile();
   const createTripMutation = useCreateTrip();
   const acceptBookingMutation = useAcceptBooking();
@@ -215,6 +219,13 @@ export default function DriverScreen() {
   const updateVehicleMutation = useUpdateVehicle();
   const deleteVehicleMutation = useDeleteVehicle();
 
+  const stopTokenRefreshInterval = useCallback(() => {
+    if (tokenRefreshIntervalRef.current !== null) {
+      clearInterval(tokenRefreshIntervalRef.current);
+      tokenRefreshIntervalRef.current = null;
+    }
+  }, []);
+
   const stopForegroundTracking = useCallback(() => {
     locationSubRef.current?.remove();
     locationSubRef.current = null;
@@ -225,10 +236,55 @@ export default function DriverScreen() {
   }, []);
 
   const stopAllTracking = useCallback(async () => {
+    stopTokenRefreshInterval();
     stopForegroundTracking();
     await stopBackgroundLocationTask();
     await clearBgLocationCredentials();
-  }, [stopForegroundTracking]);
+  }, [stopForegroundTracking, stopTokenRefreshInterval]);
+
+  const startTokenRefreshInterval = useCallback(
+    (profileId: number) => {
+      stopTokenRefreshInterval();
+      tokenRefreshIntervalRef.current = setInterval(async () => {
+        try {
+          const storedRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+          if (!storedRefreshToken || !process.env.EXPO_PUBLIC_DOMAIN) {
+            throw new Error("Missing credentials");
+          }
+          const newTokens = await refreshToken({ refreshToken: storedRefreshToken });
+          await login(newTokens);
+          await storeBgLocationCredentials(
+            newTokens.accessToken,
+            process.env.EXPO_PUBLIC_DOMAIN,
+            newTokens.refreshToken,
+          );
+          if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+          }
+          const wsUrl = `wss://${process.env.EXPO_PUBLIC_DOMAIN}/ws?token=${newTokens.accessToken}`;
+          wsRef.current = new WebSocket(wsUrl);
+        } catch {
+          stopTokenRefreshInterval();
+          await stopAllTracking();
+          try {
+            await updateProfileMutationRef.current.mutateAsync({
+              id: profileId,
+              data: { isOnline: false },
+            });
+          } catch {
+            // best-effort — server may already show offline
+          }
+          setLocalIsOnline(false);
+          Alert.alert(
+            "Session Expired",
+            "Your session could not be refreshed. You have been taken offline.",
+          );
+        }
+      }, 10 * 60 * 1000);
+    },
+    [login, stopAllTracking, stopTokenRefreshInterval],
+  );
 
   const startForegroundTracking = useCallback(
     async (profileId: number) => {
@@ -258,8 +314,9 @@ export default function DriverScreen() {
         (loc) => {
           const { latitude: lat, longitude: lng } = loc.coords;
           setCurrentLocation({ lat, lng });
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(
+          const activeWs = wsRef.current;
+          if (activeWs && activeWs.readyState === WebSocket.OPEN) {
+            activeWs.send(
               JSON.stringify({
                 type: "location",
                 driverId: profileId,
@@ -301,9 +358,10 @@ export default function DriverScreen() {
 
   useEffect(() => {
     return () => {
+      stopTokenRefreshInterval();
       stopForegroundTracking();
     };
-  }, [stopForegroundTracking]);
+  }, [stopForegroundTracking, stopTokenRefreshInterval]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -358,6 +416,7 @@ export default function DriverScreen() {
       refetchProfile();
       if (newVal) {
         await startLocationTracking(profileId);
+        startTokenRefreshInterval(profileId);
       } else {
         await stopAllTracking();
       }
