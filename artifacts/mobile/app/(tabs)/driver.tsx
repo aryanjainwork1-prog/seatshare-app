@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 import {
+  BACKGROUND_LOCATION_TASK,
   checkAndClearBgStoppedFlag,
   clearBgLocationCredentials,
   startBackgroundLocationTask,
@@ -146,8 +147,10 @@ export default function DriverScreen() {
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
   const appStateRef = useRef(AppState.currentState);
   const tokenRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const bgPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [bgTaskStopped, setBgTaskStopped] = useState(false);
 
   const { data: profilesData, refetch: refetchProfile } = useListDriverProfiles(
     { userId: user?.id, limit: 1 },
@@ -241,6 +244,33 @@ export default function DriverScreen() {
     await stopBackgroundLocationTask();
     await clearBgLocationCredentials();
   }, [stopForegroundTracking, stopTokenRefreshInterval]);
+
+  const stopBgPoll = useCallback(() => {
+    if (bgPollRef.current !== null) {
+      clearInterval(bgPollRef.current);
+      bgPollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!displayIsOnline || Platform.OS === "web") {
+      stopBgPoll();
+      setBgTaskStopped(false);
+      return;
+    }
+    bgPollRef.current = setInterval(async () => {
+      if (appStateRef.current !== "active") return;
+      try {
+        const running = await Location.hasStartedLocationUpdatesAsync(
+          BACKGROUND_LOCATION_TASK,
+        );
+        setBgTaskStopped(!running);
+      } catch {
+        // ignore — task manager may not be available in all environments
+      }
+    }, 15_000);
+    return stopBgPoll;
+  }, [displayIsOnline, stopBgPoll]);
 
   const startTokenRefreshInterval = useCallback(
     (profileId: number) => {
@@ -360,8 +390,9 @@ export default function DriverScreen() {
     return () => {
       stopTokenRefreshInterval();
       stopForegroundTracking();
+      stopBgPoll();
     };
-  }, [stopForegroundTracking, stopTokenRefreshInterval]);
+  }, [stopForegroundTracking, stopTokenRefreshInterval, stopBgPoll]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -415,9 +446,11 @@ export default function DriverScreen() {
       setLocalIsOnline((updated as { isOnline?: boolean }).isOnline ?? newVal);
       refetchProfile();
       if (newVal) {
+        setBgTaskStopped(false);
         await startLocationTracking(profileId);
         startTokenRefreshInterval(profileId);
       } else {
+        setBgTaskStopped(false);
         await stopAllTracking();
       }
     } catch {
@@ -666,6 +699,15 @@ export default function DriverScreen() {
           disabled={updateProfileMutation.isPending || createProfileMutation.isPending}
         />
       </View>
+
+      {bgTaskStopped && displayIsOnline && (
+        <View style={[styles.demoBanner, { backgroundColor: `${colors.destructive}18`, borderColor: `${colors.destructive}55` }]}>
+          <Feather name="alert-triangle" size={13} color={colors.destructive} />
+          <Text style={[styles.demoBannerText, { color: colors.destructive, fontFamily: "Inter_400Regular" }]}>
+            Location sharing stopped unexpectedly. Toggle offline then back online to resume.
+          </Text>
+        </View>
+      )}
 
       {isDemoMode && (
         <View style={[styles.demoBanner, { backgroundColor: `${colors.primary}18`, borderColor: `${colors.primary}44` }]}>
