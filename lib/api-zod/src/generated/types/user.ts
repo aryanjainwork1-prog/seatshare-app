@@ -28,5 +28,7 @@ export interface User {
   /** @nullable */
   bio?: string | null;
   lateCancellations?: number;
+  /** @nullable */
+  averageRating?: number | null;
   createdAt: Date;
 }

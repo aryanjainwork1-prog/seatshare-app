@@ -1259,8 +1259,8 @@ export default function DriverScreen() {
                     {booking.pickupAddress} → {booking.dropoffAddress}
                   </Text>
 
-                  {/* Passenger details: workplace and/or gender+age */}
-                  {(booking.passenger?.workplace || booking.passenger?.gender || booking.passenger?.age) && (
+                  {/* Passenger details: workplace, gender+age, rating, late cancellations */}
+                  {(booking.passenger?.workplace || booking.passenger?.gender || booking.passenger?.age || booking.passenger?.averageRating != null || (booking.passenger?.lateCancellations ?? 0) > 0) && (
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
                       {booking.passenger?.workplace ? (
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -1275,6 +1275,22 @@ export default function DriverScreen() {
                           <Feather name="user" size={11} color={colors.mutedForeground} />
                           <Text style={{ color: colors.mutedForeground, fontSize: 11, fontFamily: "Inter_400Regular" }}>
                             {[booking.passenger?.gender, booking.passenger?.age ? `${booking.passenger.age}y` : null].filter(Boolean).join(", ")}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {booking.passenger?.averageRating != null ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                          <Feather name="star" size={11} color="#f59e0b" />
+                          <Text style={{ color: colors.mutedForeground, fontSize: 11, fontFamily: "Inter_400Regular" }}>
+                            {booking.passenger.averageRating.toFixed(1)}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {(booking.passenger?.lateCancellations ?? 0) > 0 ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                          <Feather name="x-circle" size={11} color={colors.destructive} />
+                          <Text style={{ color: colors.destructive, fontSize: 11, fontFamily: "Inter_400Regular" }}>
+                            {booking.passenger?.lateCancellations} late {booking.passenger?.lateCancellations === 1 ? "cancellation" : "cancellations"}
                           </Text>
                         </View>
                       ) : null}

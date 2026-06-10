@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and, SQL, count, desc } from "drizzle-orm";
-import { db, ratingsTable } from "@workspace/db";
+import { eq, and, SQL, count, avg, desc } from "drizzle-orm";
+import { db, ratingsTable, usersTable } from "@workspace/db";
 import {
   ListRatingsQueryParams,
   CreateRatingBody,
@@ -38,6 +38,19 @@ router.post("/ratings", async (req, res): Promise<void> => {
   }
 
   const [rating] = await db.insert(ratingsTable).values(parsed.data).returning();
+
+  const [{ avgScore }] = await db
+    .select({ avgScore: avg(ratingsTable.score) })
+    .from(ratingsTable)
+    .where(eq(ratingsTable.ratedId, parsed.data.ratedId));
+
+  if (avgScore != null) {
+    await db
+      .update(usersTable)
+      .set({ averageRating: Number(avgScore) })
+      .where(eq(usersTable.id, parsed.data.ratedId));
+  }
+
   res.status(201).json(rating);
 });
 
