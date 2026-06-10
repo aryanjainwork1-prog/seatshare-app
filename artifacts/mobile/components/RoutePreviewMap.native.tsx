@@ -97,6 +97,16 @@ export function RoutePreviewMap({
           const isSelected = selectedMatchId === m.trip.id;
           return (
             <React.Fragment key={m.trip.id}>
+              <Polyline
+                coordinates={[
+                  { latitude: driverLat, longitude: driverLng },
+                  { latitude: fromCoords.lat, longitude: fromCoords.lng },
+                ]}
+                strokeColor={isSelected ? "#f59e0b" : "#a78bfa"}
+                strokeWidth={2}
+                lineDashPattern={[8, 5]}
+                zIndex={isSelected ? 2 : 1}
+              />
               <Marker
                 coordinate={{ latitude: driverLat, longitude: driverLng }}
                 title={driverName}
