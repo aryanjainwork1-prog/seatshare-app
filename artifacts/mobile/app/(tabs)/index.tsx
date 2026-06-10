@@ -50,6 +50,7 @@ export default function FindRidesScreen() {
   const [mapPicker, setMapPicker] = useState<null | "from" | "to">(null);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [emailBanner, setEmailBanner] = useState<"pending" | "dev_skip" | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [nearbyDrivers, setNearbyDrivers] = useState<MatchResult[]>([]);
@@ -303,9 +304,11 @@ export default function FindRidesScreen() {
       });
       setMatches(result.matches ?? []);
       setHasSearched(true);
+      setSelectedMatchId(null);
     } catch {
       setMatches([]);
       setHasSearched(true);
+      setSelectedMatchId(null);
     }
   }
 
@@ -320,22 +323,22 @@ export default function FindRidesScreen() {
       .toUpperCase()
       .slice(0, 2);
 
+    const isSelected = selectedMatchId === item.trip.id;
+
     return (
       <Pressable
         style={({ pressed }) => [
           styles.card,
           {
             backgroundColor: colors.card,
-            borderColor: colors.border,
+            borderColor: isSelected ? colors.primary : colors.border,
+            borderWidth: isSelected ? 2 : 1,
             opacity: pressed ? 0.9 : 1,
           },
         ]}
         onPress={() => {
           Haptics.selectionAsync();
-          router.push({
-            pathname: "/trip/[id]",
-            params: { id: String(item.trip.id) },
-          });
+          setSelectedMatchId(isSelected ? null : item.trip.id);
         }}
       >
         <View style={styles.cardTop}>
@@ -492,6 +495,24 @@ export default function FindRidesScreen() {
             </Text>
           </View>
         </View>
+
+        {isSelected && (
+          <Pressable
+            style={[styles.viewDetailsBtn, { borderTopColor: colors.border }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push({
+                pathname: "/trip/[id]",
+                params: { id: String(item.trip.id) },
+              });
+            }}
+          >
+            <Text style={[styles.viewDetailsBtnText, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+              View ride details
+            </Text>
+            <Feather name="arrow-right" size={14} color={colors.primary} />
+          </Pressable>
+        )}
       </Pressable>
     );
   }
@@ -654,6 +675,8 @@ export default function FindRidesScreen() {
                   fromLabel={fromText || "Pickup"}
                   toLabel={toText || "Drop-off"}
                   matches={matches}
+                  selectedMatchId={selectedMatchId}
+                  onDeselect={() => setSelectedMatchId(null)}
                 />
               ) : null
             }
@@ -974,6 +997,16 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   routeText: { fontSize: 13, flex: 1 },
+  viewDetailsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    marginTop: 8,
+  },
+  viewDetailsBtnText: { fontSize: 13 },
   emptyState: {
     flex: 1,
     alignItems: "center",

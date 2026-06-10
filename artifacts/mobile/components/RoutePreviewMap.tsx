@@ -11,6 +11,8 @@ interface RoutePreviewMapProps {
   fromLabel?: string;
   toLabel?: string;
   matches?: MatchResult[];
+  selectedMatchId?: number | null;
+  onDeselect?: () => void;
 }
 
 export function RoutePreviewMap({
@@ -19,6 +21,7 @@ export function RoutePreviewMap({
   fromLabel = "Pickup",
   toLabel = "Drop-off",
   matches,
+  selectedMatchId,
 }: RoutePreviewMapProps) {
   const colors = useColors();
 
@@ -54,6 +57,20 @@ export function RoutePreviewMap({
           </Text>
         </View>
       )}
+
+      {selectedMatchId != null && (() => {
+        const sel = matches?.find((m) => m.trip.id === selectedMatchId);
+        if (!sel) return null;
+        const driverName = sel.driverProfile?.user?.name ?? "Driver";
+        return (
+          <View style={[styles.pickupBanner, { backgroundColor: `#f59e0b18`, borderBottomColor: `#f59e0b44` }]}>
+            <Feather name="map-pin" size={12} color="#f59e0b" />
+            <Text style={[styles.matchesBannerText, { color: "#f59e0b", fontFamily: "Inter_500Medium" }]} numberOfLines={1}>
+              {driverName}'s pickup: {sel.trip.originAddress ?? `${sel.trip.originLat.toFixed(4)}°, ${sel.trip.originLng.toFixed(4)}°`}
+            </Text>
+          </View>
+        );
+      })()}
 
       <View style={[styles.mapPlaceholder, { backgroundColor: `${colors.mutedForeground}10` }]}>
         <View style={styles.coordsRow}>
@@ -165,4 +182,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   matchesBannerText: { fontSize: 12 },
+  pickupBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
 });

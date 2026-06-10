@@ -12,6 +12,8 @@ interface RoutePreviewMapProps {
   fromLabel?: string;
   toLabel?: string;
   matches?: MatchResult[];
+  selectedMatchId?: number | null;
+  onDeselect?: () => void;
 }
 
 export function RoutePreviewMap({
@@ -20,6 +22,8 @@ export function RoutePreviewMap({
   fromLabel = "Pickup",
   toLabel = "Drop-off",
   matches,
+  selectedMatchId,
+  onDeselect,
 }: RoutePreviewMapProps) {
   const colors = useColors();
 
@@ -64,6 +68,7 @@ export function RoutePreviewMap({
         zoomEnabled={false}
         pitchEnabled={false}
         rotateEnabled={false}
+        onPress={() => onDeselect?.()}
       >
         <Polyline
           coordinates={[
@@ -89,14 +94,26 @@ export function RoutePreviewMap({
           const driverLng = m.driverProfile?.currentLng ?? m.trip.originLng;
           const driverName = m.driverProfile?.user?.name ?? "Driver";
           const eta = m.etaMinutes !== undefined ? ` · ${m.etaMinutes} min` : "";
+          const isSelected = selectedMatchId === m.trip.id;
           return (
-            <Marker
-              key={m.trip.id}
-              coordinate={{ latitude: driverLat, longitude: driverLng }}
-              title={driverName}
-              description={`₹${m.estimatedFare.toFixed(0)}/seat${eta}`}
-              pinColor="#6366f1"
-            />
+            <React.Fragment key={m.trip.id}>
+              <Marker
+                coordinate={{ latitude: driverLat, longitude: driverLng }}
+                title={driverName}
+                description={`₹${m.estimatedFare.toFixed(0)}/seat${eta}`}
+                pinColor={isSelected ? "#f59e0b" : "#6366f1"}
+                zIndex={isSelected ? 2 : 1}
+              />
+              {isSelected && (
+                <Marker
+                  coordinate={{ latitude: m.trip.originLat, longitude: m.trip.originLng }}
+                  title={`${driverName}'s pickup`}
+                  description={m.trip.originAddress ?? undefined}
+                  pinColor="#f59e0b"
+                  zIndex={3}
+                />
+              )}
+            </React.Fragment>
           );
         })}
       </MapView>
