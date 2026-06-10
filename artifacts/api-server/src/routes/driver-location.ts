@@ -20,7 +20,7 @@ router.post("/driver-location", async (req, res): Promise<void> => {
 
   await db
     .update(driverProfilesTable)
-    .set({ currentLat: lat, currentLng: lng })
+    .set({ currentLat: lat, currentLng: lng, locationUpdatedAt: new Date() })
     .where(eq(driverProfilesTable.userId, caller.sub));
 
   broadcastDriverLocation(caller.sub, lat, lng);

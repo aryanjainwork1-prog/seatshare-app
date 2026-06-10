@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -19,6 +19,8 @@ import { useColors } from "@/hooks/useColors";
 import { useDriverLocation } from "@/hooks/useDriverLocation";
 import { LiveDriverMap } from "@/components/LiveDriverMap";
 
+const STALE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -29,6 +31,16 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatAge(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s ago`;
+  }
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return seconds === 0 ? `${minutes}m ago` : `${minutes}m ${seconds}s ago`;
 }
 
 export default function TrackingScreen() {
@@ -91,7 +103,32 @@ export default function TrackingScreen() {
   // Use WS location if available, otherwise fall back to profile's last known coords
   const driverLat = wsLocation?.lat ?? profile?.currentLat ?? null;
   const driverLng = wsLocation?.lng ?? profile?.currentLng ?? null;
-  const locationUpdatedAt = wsLocation?.updatedAt ?? null;
+  // locationUpdatedAt comes from the WS message (or falls back to the DB field via profile)
+  const locationUpdatedAt =
+    wsLocation?.updatedAt != null
+      ? new Date(wsLocation.updatedAt).getTime()
+      : profile?.locationUpdatedAt != null
+        ? new Date(profile.locationUpdatedAt).getTime()
+        : null;
+
+  // Tick every second to keep the "Updated X ago" label live
+  const [now, setNow] = useState<number>(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Staleness is derived from the actual location event timestamp, not poll time.
+  // No false stale flash on initial load — stays false until the first location arrives.
+  const ageSinceUpdateMs = locationUpdatedAt !== null ? now - locationUpdatedAt : 0;
+  const isStale = locationUpdatedAt !== null && ageSinceUpdateMs > STALE_THRESHOLD_MS;
+
+  const distanceKm =
+    driverLat != null && driverLng != null && pickupLat && pickupLng
+      ? haversineKm(driverLat, driverLng, pickupLat, pickupLng)
+      : null;
+
+  const etaMin = distanceKm != null ? Math.round((distanceKm / 30) * 60) : null;
 
   const initials = driverName
     .split(" ")
@@ -130,22 +167,62 @@ export default function TrackingScreen() {
                 style={[
                   styles.livePulse,
                   {
-                    backgroundColor: `${colors.success}44`,
+                    backgroundColor: isStale
+                      ? `${colors.warning}44`
+                      : `${colors.success}44`,
                     transform: [{ scale: pulseAnim }],
                   },
                 ]}
               />
-              <View style={[styles.liveDot, { backgroundColor: colors.success }]} />
+              <View
+                style={[
+                  styles.liveDot,
+                  { backgroundColor: isStale ? colors.warning : colors.success },
+                ]}
+              />
             </View>
             <Text
               style={[
                 styles.liveText,
-                { color: colors.success, fontFamily: "Inter_600SemiBold" },
+                {
+                  color: isStale ? colors.warning : colors.success,
+                  fontFamily: "Inter_600SemiBold",
+                },
               ]}
             >
-              LIVE
+              {isStale ? "WAITING" : "LIVE"}
             </Text>
-            {isConnected && (
+
+            {isStale ? (
+              <View
+                style={[
+                  styles.staleBadge,
+                  {
+                    backgroundColor: `${colors.warning}18`,
+                    borderColor: `${colors.warning}40`,
+                  },
+                ]}
+              >
+                <Feather name="wifi-off" size={11} color={colors.warning} />
+                <Text
+                  style={[
+                    styles.staleBadgeText,
+                    { color: colors.warning, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  Waiting for location…
+                </Text>
+              </View>
+            ) : locationUpdatedAt !== null ? (
+              <Text
+                style={[
+                  styles.updatedText,
+                  { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+                ]}
+              >
+                Updated {formatAge(ageSinceUpdateMs)}
+              </Text>
+            ) : isConnected ? (
               <Text
                 style={[
                   styles.updatedText,
@@ -154,7 +231,7 @@ export default function TrackingScreen() {
               >
                 Real-time
               </Text>
-            )}
+            ) : null}
           </View>
 
           <View style={[styles.driverRow, { borderTopColor: colors.border }]}>
@@ -213,7 +290,7 @@ export default function TrackingScreen() {
             pickupLat={pickupLat}
             pickupLng={pickupLng}
             isConnected={isConnected}
-            updatedAt={locationUpdatedAt}
+            updatedAt={wsLocation?.updatedAt ?? null}
           />
         ) : (
           <View
@@ -308,6 +385,17 @@ const styles = StyleSheet.create({
   },
   liveText: { fontSize: 13, letterSpacing: 1 },
   updatedText: { fontSize: 12, marginLeft: "auto" },
+  staleBadge: {
+    marginLeft: "auto",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  staleBadgeText: { fontSize: 12 },
   driverRow: {
     flexDirection: "row",
     alignItems: "center",

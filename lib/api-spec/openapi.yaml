@@ -1177,6 +1177,9 @@ components:
           type: ["number", "null"]
         currentLng:
           type: ["number", "null"]
+        locationUpdatedAt:
+          type: ["string", "null"]
+          format: date-time
         user:
           $ref: "#/components/schemas/User"
         vehicle:

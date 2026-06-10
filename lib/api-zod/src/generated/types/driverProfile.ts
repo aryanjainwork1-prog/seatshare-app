@@ -21,6 +21,8 @@ export interface DriverProfile {
   currentLat?: number | null;
   /** @nullable */
   currentLng?: number | null;
+  /** @nullable */
+  locationUpdatedAt?: Date | null;
   user?: User;
   vehicle?: Vehicle | null;
   createdAt: Date;

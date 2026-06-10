@@ -298,7 +298,7 @@ export function setupWebSocket(server: Server): void {
         // Update DB using authenticated userId, not any client-supplied id
         await db
           .update(driverProfilesTable)
-          .set({ currentLat: lat, currentLng: lng })
+          .set({ currentLat: lat, currentLng: lng, locationUpdatedAt: new Date() })
           .where(eq(driverProfilesTable.userId, userId));
 
         const broadcast = JSON.stringify({

@@ -495,6 +495,7 @@ export const ListDriverProfilesResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -547,6 +548,7 @@ export const GetDriverProfileResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -602,6 +604,7 @@ export const UpdateDriverProfileResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -654,6 +657,7 @@ export const VerifyDriverProfileResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -829,6 +833,7 @@ export const ListTripsResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -917,6 +922,7 @@ export const GetTripResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -987,6 +993,7 @@ export const UpdateTripResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -1056,6 +1063,7 @@ export const CancelTripResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -1140,6 +1148,7 @@ export const ListBookingsResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -1254,6 +1263,7 @@ export const GetBookingResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -1353,6 +1363,7 @@ export const AcceptBookingResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -1452,6 +1463,7 @@ export const RejectBookingResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -1551,6 +1563,7 @@ export const CompleteBookingResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -1650,6 +1663,7 @@ export const CancelBookingResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -1954,6 +1968,7 @@ export const GetStatsActivityResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -2024,6 +2039,7 @@ export const GetStatsActivityResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -2134,6 +2150,7 @@ export const MatchDriversResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
@@ -2175,6 +2192,7 @@ export const MatchDriversResponse = zod.object({
   "isOnline": zod.boolean(),
   "currentLat": zod.number().nullish(),
   "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
   "user": zod.object({
   "id": zod.number(),
   "phone": zod.string(),
