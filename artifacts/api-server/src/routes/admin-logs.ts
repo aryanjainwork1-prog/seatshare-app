@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { count, desc } from "drizzle-orm";
+import { count, desc, eq, and } from "drizzle-orm";
 import { db, adminLogsTable } from "@workspace/db";
 import { ListAdminLogsQueryParams } from "@workspace/api-zod";
 
@@ -12,11 +12,23 @@ router.get("/admin-logs", async (req, res): Promise<void> => {
     return;
   }
 
-  const { page = 1, limit = 50 } = parsed.data;
+  const { page = 1, limit = 50, action } = parsed.data;
   const offset = (page - 1) * limit;
 
-  const [{ total }] = await db.select({ total: count() }).from(adminLogsTable);
-  const data = await db.select().from(adminLogsTable).limit(limit).offset(offset).orderBy(desc(adminLogsTable.createdAt));
+  const where = action ? eq(adminLogsTable.action, action) : undefined;
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(adminLogsTable)
+    .where(where);
+
+  const data = await db
+    .select()
+    .from(adminLogsTable)
+    .where(where)
+    .limit(limit)
+    .offset(offset)
+    .orderBy(desc(adminLogsTable.createdAt));
 
   res.json({ data, total, page, limit });
 });

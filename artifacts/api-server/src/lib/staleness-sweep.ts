@@ -1,5 +1,5 @@
 import { lt, eq, and, isNotNull } from "drizzle-orm";
-import { db, driverProfilesTable } from "@workspace/db";
+import { db, driverProfilesTable, adminLogsTable } from "@workspace/db";
 import { logger } from "./logger";
 
 const DEFAULT_STALE_THRESHOLD_MINUTES = 15;
@@ -26,13 +26,26 @@ export async function sweepStaleDrivers(): Promise<void> {
           lt(driverProfilesTable.locationUpdatedAt, cutoff),
         ),
       )
-      .returning({ id: driverProfilesTable.id });
+      .returning({ id: driverProfilesTable.id, locationUpdatedAt: driverProfilesTable.locationUpdatedAt });
 
     if (result.length > 0) {
       logger.info(
         { count: result.length, thresholdMinutes },
         "Marked stale drivers offline",
       );
+
+      // Write one admin-log entry per affected driver so admins can audit
+      const logEntries = result.map((row) => ({
+        adminId: null as number | null,
+        action: "auto_offline" as const,
+        entityType: "driver_profile",
+        entityId: row.id,
+        details: row.locationUpdatedAt
+          ? `Location last seen: ${row.locationUpdatedAt.toISOString()} (threshold: ${thresholdMinutes} min)`
+          : `No location recorded (threshold: ${thresholdMinutes} min)`,
+      }));
+
+      await db.insert(adminLogsTable).values(logEntries);
     }
   } catch (err) {
     logger.error({ err }, "staleness-sweep: failed to sweep stale drivers");

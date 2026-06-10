@@ -8,7 +8,8 @@
 
 export interface AdminLog {
   id: number;
-  adminId: number;
+  /** @nullable */
+  adminId?: number | null;
   action: string;
   entityType: string;
   /** @nullable */

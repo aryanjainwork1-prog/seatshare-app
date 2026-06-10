@@ -9,4 +9,5 @@
 export type ListAdminLogsParams = {
 page?: number;
 limit?: number;
+action?: string;
 };

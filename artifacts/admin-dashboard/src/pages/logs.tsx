@@ -11,15 +11,56 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
+
+const ACTION_OPTIONS = [
+  { value: "", label: "All actions" },
+  { value: "auto_offline", label: "Auto-offline" },
+];
+
+function ActionBadge({ action }: { action: string }) {
+  if (action === "auto_offline") {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-amber-500/20 text-amber-400 border border-amber-500/30 capitalize font-mono text-xs"
+      >
+        {action}
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="bg-accent text-accent-foreground capitalize font-mono text-xs">
+      {action}
+    </Badge>
+  );
+}
 
 export default function Logs() {
   const [page, setPage] = useState(1);
+  const [actionFilter, setActionFilter] = useState("");
 
-  const { data, isLoading } = useListAdminLogs({
+  const queryParams = {
     page,
     limit: 20,
-  }, { query: { queryKey: getListAdminLogsQueryKey({ page, limit: 20 }) } });
+    ...(actionFilter ? { action: actionFilter } : {}),
+  };
+
+  const { data, isLoading } = useListAdminLogs(queryParams, {
+    query: { queryKey: getListAdminLogsQueryKey(queryParams) },
+  });
+
+  function handleActionChange(value: string) {
+    setActionFilter(value);
+    setPage(1);
+  }
 
   return (
     <div className="space-y-6">
@@ -28,12 +69,32 @@ export default function Logs() {
         <p className="text-muted-foreground mt-2">Audit trail of all administrative actions taken on the platform.</p>
       </div>
 
+      <div className="flex items-center gap-3">
+        <Select value={actionFilter} onValueChange={handleActionChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All actions" />
+          </SelectTrigger>
+          <SelectContent>
+            {ACTION_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value || "__all__"} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {actionFilter && (
+          <Button variant="ghost" size="sm" onClick={() => handleActionChange("")}>
+            Clear filter
+          </Button>
+        )}
+      </div>
+
       <div className="rounded-md border border-border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-border">
               <TableHead>Timestamp</TableHead>
-              <TableHead>Admin ID</TableHead>
+              <TableHead>Admin</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Entity Type</TableHead>
               <TableHead>Entity ID</TableHead>
@@ -65,21 +126,19 @@ export default function Logs() {
                     {format(new Date(log.createdAt), "yyyy-MM-dd HH:mm:ss")}
                   </TableCell>
                   <TableCell className="text-sm font-medium">
-                    {log.adminId}
+                    {log.adminId != null ? log.adminId : <span className="text-muted-foreground italic">system</span>}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="bg-accent text-accent-foreground capitalize font-mono text-xs">
-                      {log.action}
-                    </Badge>
+                    <ActionBadge action={log.action} />
                   </TableCell>
                   <TableCell className="text-sm capitalize">
                     {log.entityType}
                   </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
-                    {log.entityId || "-"}
+                    {log.entityId ?? "-"}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground truncate max-w-[300px]" title={log.details || ""}>
-                    {log.details || "-"}
+                  <TableCell className="text-sm text-muted-foreground truncate max-w-[300px]" title={log.details ?? ""}>
+                    {log.details ?? "-"}
                   </TableCell>
                 </TableRow>
               ))

@@ -2380,13 +2380,14 @@ export const MatchDriversResponse = zod.object({
  */
 export const ListAdminLogsQueryParams = zod.object({
   "page": zod.coerce.number().optional(),
-  "limit": zod.coerce.number().optional()
+  "limit": zod.coerce.number().optional(),
+  "action": zod.coerce.string().optional()
 })
 
 export const ListAdminLogsResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.number(),
-  "adminId": zod.number(),
+  "adminId": zod.number().nullish(),
   "action": zod.string(),
   "entityType": zod.string(),
   "entityId": zod.number().nullish(),

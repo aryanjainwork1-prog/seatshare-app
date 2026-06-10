@@ -1009,6 +1009,10 @@ paths:
           name: limit
           schema:
             type: integer
+        - in: query
+          name: action
+          schema:
+            type: string
       responses:
         "200":
           description: Admin logs
@@ -1781,12 +1785,12 @@ components:
 
     AdminLog:
       type: object
-      required: [id, adminId, action, entityType, createdAt]
+      required: [id, action, entityType, createdAt]
       properties:
         id:
           type: integer
         adminId:
-          type: integer
+          type: ["integer", "null"]
         action:
           type: string
         entityType:

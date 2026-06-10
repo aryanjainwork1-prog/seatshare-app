@@ -398,7 +398,8 @@ export interface MatchResultList {
 
 export interface AdminLog {
   id: number;
-  adminId: number;
+  /** @nullable */
+  adminId?: number | null;
   action: string;
   entityType: string;
   /** @nullable */
@@ -505,5 +506,6 @@ limit?: number;
 export type ListAdminLogsParams = {
 page?: number;
 limit?: number;
+action?: string;
 };
 

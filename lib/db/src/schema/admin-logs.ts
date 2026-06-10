@@ -5,7 +5,7 @@ import { usersTable } from "./users";
 
 export const adminLogsTable = pgTable("admin_logs", {
   id: serial("id").primaryKey(),
-  adminId: integer("admin_id").notNull().references(() => usersTable.id),
+  adminId: integer("admin_id").references(() => usersTable.id),
   action: text("action").notNull(),
   entityType: text("entity_type").notNull(),
   entityId: integer("entity_id"),
