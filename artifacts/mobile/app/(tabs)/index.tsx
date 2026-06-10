@@ -418,6 +418,17 @@ export default function FindRidesScreen() {
                 {vehicle.color} {vehicle.make} {vehicle.model}
               </Text>
             )}
+            {driver?.bio && (
+              <Text
+                style={[
+                  styles.driverBio,
+                  { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+                ]}
+                numberOfLines={1}
+              >
+                {driver.bio.split("\n")[0]}
+              </Text>
+            )}
           </View>
           <View style={styles.fareBox}>
             <Text
@@ -999,6 +1010,7 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1 },
   driverName: { fontSize: 15 },
   vehicleText: { fontSize: 13, marginTop: 2 },
+  driverBio: { fontSize: 12, marginTop: 2 },
   fareBox: { alignItems: "flex-end" },
   fareAmount: { fontSize: 20 },
   fareLabel: { fontSize: 12 },

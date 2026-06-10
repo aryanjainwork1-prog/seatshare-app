@@ -14,6 +14,7 @@ export const usersTable = pgTable("users", {
   gender: text("gender"),
   workplace: text("workplace"),
   officeLocation: text("office_location"),
+  bio: text("bio"),
   passwordHash: text("password_hash"),
   refreshToken: text("refresh_token"),
   expoPushToken: text("expo_push_token"),

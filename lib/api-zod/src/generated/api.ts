@@ -54,6 +54,7 @@ export const VerifyOtpResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),
@@ -80,6 +81,7 @@ export const VerifyOtpResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -123,6 +125,7 @@ export const RefreshTokenResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),
@@ -149,6 +152,7 @@ export const RefreshTokenResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -193,6 +197,7 @@ export const AdminLoginResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),
@@ -219,6 +224,7 @@ export const AdminLoginResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -277,6 +283,7 @@ export const GetMeResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 })
@@ -292,7 +299,8 @@ export const UpdateMeBody = zod.object({
   "age": zod.number().optional(),
   "gender": zod.string().optional(),
   "workplace": zod.string().optional(),
-  "officeLocation": zod.string().optional()
+  "officeLocation": zod.string().optional(),
+  "bio": zod.string().optional()
 })
 
 export const UpdateMeResponse = zod.object({
@@ -307,6 +315,7 @@ export const UpdateMeResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 })
@@ -348,6 +357,7 @@ export const ListUsersResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 })),
@@ -376,6 +386,7 @@ export const GetUserResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 })
@@ -395,7 +406,8 @@ export const UpdateUserBody = zod.object({
   "age": zod.number().optional(),
   "gender": zod.string().optional(),
   "workplace": zod.string().optional(),
-  "officeLocation": zod.string().optional()
+  "officeLocation": zod.string().optional(),
+  "bio": zod.string().optional()
 })
 
 export const UpdateUserResponse = zod.object({
@@ -410,6 +422,7 @@ export const UpdateUserResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 })
@@ -439,6 +452,7 @@ export const SuspendUserResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 })
@@ -470,6 +484,7 @@ export const CreateDriverProfileResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -525,6 +540,7 @@ export const ListDriverProfilesResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -579,6 +595,7 @@ export const GetDriverProfileResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -636,6 +653,7 @@ export const UpdateDriverProfileResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -690,6 +708,7 @@ export const VerifyDriverProfileResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -867,6 +886,7 @@ export const ListTripsResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -957,6 +977,7 @@ export const GetTripResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1029,6 +1050,7 @@ export const UpdateTripResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1100,6 +1122,7 @@ export const CancelTripResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1186,6 +1209,7 @@ export const ListBookingsResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1218,6 +1242,7 @@ export const ListBookingsResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -1303,6 +1328,7 @@ export const GetBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1335,6 +1361,7 @@ export const GetBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -1405,6 +1432,7 @@ export const AcceptBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1437,6 +1465,7 @@ export const AcceptBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -1507,6 +1536,7 @@ export const RejectBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1539,6 +1569,7 @@ export const RejectBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -1609,6 +1640,7 @@ export const CompleteBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1641,6 +1673,7 @@ export const CompleteBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -1711,6 +1744,7 @@ export const CancelBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -1743,6 +1777,7 @@ export const CancelBookingResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -1871,6 +1906,7 @@ export const ListSupportTicketsResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -1918,6 +1954,7 @@ export const GetSupportTicketResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -1956,6 +1993,7 @@ export const UpdateSupportTicketResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -2021,6 +2059,7 @@ export const GetStatsActivityResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -2093,6 +2132,7 @@ export const GetStatsActivityResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -2125,6 +2165,7 @@ export const GetStatsActivityResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
@@ -2142,6 +2183,7 @@ export const GetStatsActivityResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 })),
@@ -2207,6 +2249,7 @@ export const MatchDriversResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
@@ -2250,6 +2293,7 @@ export const MatchDriversResponse = zod.object({
   "gender": zod.string().nullish(),
   "workplace": zod.string().nullish(),
   "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "lateCancellations": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),

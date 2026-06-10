@@ -14,4 +14,5 @@ export interface UserUpdate {
   gender?: string;
   workplace?: string;
   officeLocation?: string;
+  bio?: string;
 }

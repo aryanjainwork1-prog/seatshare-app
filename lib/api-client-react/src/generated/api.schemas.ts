@@ -48,6 +48,8 @@ export interface User {
   workplace?: string | null;
   /** @nullable */
   officeLocation?: string | null;
+  /** @nullable */
+  bio?: string | null;
   lateCancellations?: number;
   createdAt: string;
 }
@@ -108,6 +110,7 @@ export interface UserUpdate {
   gender?: string;
   workplace?: string;
   officeLocation?: string;
+  bio?: string;
 }
 
 export interface SuspendInput {

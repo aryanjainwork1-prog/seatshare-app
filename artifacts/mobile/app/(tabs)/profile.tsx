@@ -39,6 +39,7 @@ export default function ProfileScreen() {
   const [genderInput, setGenderInput] = useState(user?.gender ?? "");
   const [workplaceInput, setWorkplaceInput] = useState(user?.workplace ?? "");
   const [officeInput, setOfficeInput] = useState(user?.officeLocation ?? "");
+  const [bioInput, setBioInput] = useState(user?.bio ?? "");
 
   function handleVersionTap() {
     tapCountRef.current += 1;
@@ -68,7 +69,8 @@ export default function ProfileScreen() {
     setGenderInput(user?.gender ?? "");
     setWorkplaceInput(user?.workplace ?? "");
     setOfficeInput(user?.officeLocation ?? "");
-  }, [user?.name, user?.email, user?.age, user?.gender, user?.workplace, user?.officeLocation]);
+    setBioInput(user?.bio ?? "");
+  }, [user?.name, user?.email, user?.age, user?.gender, user?.workplace, user?.officeLocation, user?.bio]);
 
   const initials = (user?.name ?? user?.phone ?? "U")
     .split(" ")
@@ -89,6 +91,7 @@ export default function ProfileScreen() {
           gender: genderInput || undefined,
           workplace: workplaceInput || undefined,
           officeLocation: officeInput || undefined,
+          bio: bioInput.trim() || undefined,
         },
       });
       await updateUser(updated);
@@ -293,6 +296,24 @@ export default function ProfileScreen() {
             />
           </View>
 
+          <View style={[styles.bioInputWrap, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+            <Feather name="file-text" size={16} color={colors.mutedForeground} style={styles.bioIcon} />
+            <TextInput
+              style={[styles.bioInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+              placeholder="Short bio — introduce yourself to passengers (optional)"
+              placeholderTextColor={colors.mutedForeground}
+              value={bioInput}
+              onChangeText={(t) => setBioInput(t.slice(0, 200))}
+              multiline
+              numberOfLines={3}
+              maxLength={200}
+              textAlignVertical="top"
+            />
+            <Text style={[styles.bioCounter, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {bioInput.length}/200
+            </Text>
+          </View>
+
           <View style={styles.editRow}>
             <View style={[styles.inputRow, styles.inputHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
               <Feather name="user" size={16} color={colors.mutedForeground} />
@@ -338,6 +359,7 @@ export default function ProfileScreen() {
                 setGenderInput(user?.gender ?? "");
                 setWorkplaceInput(user?.workplace ?? "");
                 setOfficeInput(user?.officeLocation ?? "");
+                setBioInput(user?.bio ?? "");
               }}
             >
               <Text style={[styles.cancelBtnText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
@@ -395,6 +417,18 @@ export default function ProfileScreen() {
                 <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>About</Text>
                 <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
                   {[user?.age ? `${user.age} yrs` : null, user?.gender === "M" ? "Male" : user?.gender === "F" ? "Female" : null].filter(Boolean).join(" · ") || "—"}
+                </Text>
+              </View>
+            </>
+          )}
+          {user?.bio && (
+            <>
+              <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <Feather name="file-text" size={15} color={colors.mutedForeground} />
+                <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Bio</Text>
+                <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_400Regular", textAlign: "left" }]}>
+                  {user.bio}
                 </Text>
               </View>
             </>
@@ -569,6 +603,17 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 14, width: 50 },
   infoValue: { flex: 1, fontSize: 14, textAlign: "right" },
   infoSep: { height: 1, marginHorizontal: 12 },
+  bioInputWrap: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+    gap: 6,
+  },
+  bioIcon: { alignSelf: "flex-start" },
+  bioInputText: { fontSize: 15, minHeight: 64, flex: 1 },
+  bioCounter: { fontSize: 12, textAlign: "right" },
   roleBadge: {
     paddingHorizontal: 10,
     paddingVertical: 2,

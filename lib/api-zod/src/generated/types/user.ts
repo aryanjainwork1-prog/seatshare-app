@@ -25,6 +25,8 @@ export interface User {
   workplace?: string | null;
   /** @nullable */
   officeLocation?: string | null;
+  /** @nullable */
+  bio?: string | null;
   lateCancellations?: number;
   createdAt: Date;
 }

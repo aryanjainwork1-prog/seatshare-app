@@ -1109,6 +1109,8 @@ components:
           type: ["string", "null"]
         officeLocation:
           type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
         lateCancellations:
           type: integer
         createdAt:
@@ -1146,6 +1148,8 @@ components:
         workplace:
           type: string
         officeLocation:
+          type: string
+        bio:
           type: string
 
     SuspendInput:
