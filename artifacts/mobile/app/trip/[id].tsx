@@ -502,9 +502,11 @@ export default function TripDetailScreen() {
                 )}
                 {driver?.gender && (
                   <View style={[styles.bioChip, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
-                    <Feather name={driver.gender === "M" ? "user" : "user"} size={12} color={colors.primary} />
+                    <Feather name="user" size={12} color={colors.primary} />
                     <Text style={[styles.bioChipText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
-                      {driver.gender === "M" ? "Male" : "Female"}
+                      {driver.gender === "M" || driver.gender === "male" ? "Male"
+                        : driver.gender === "F" || driver.gender === "female" ? "Female"
+                        : driver.gender}
                     </Text>
                   </View>
                 )}
