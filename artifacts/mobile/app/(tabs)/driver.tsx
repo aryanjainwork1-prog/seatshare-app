@@ -1121,6 +1121,28 @@ export default function DriverScreen() {
                     {booking.pickupAddress} → {booking.dropoffAddress}
                   </Text>
 
+                  {/* Passenger details: workplace and/or gender+age */}
+                  {(booking.passenger?.workplace || booking.passenger?.gender || booking.passenger?.age) && (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                      {booking.passenger?.workplace ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Feather name="briefcase" size={11} color={colors.mutedForeground} />
+                          <Text style={{ color: colors.mutedForeground, fontSize: 11, fontFamily: "Inter_400Regular" }}>
+                            {booking.passenger.workplace}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {(booking.passenger?.gender || booking.passenger?.age) ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Feather name="user" size={11} color={colors.mutedForeground} />
+                          <Text style={{ color: colors.mutedForeground, fontSize: 11, fontFamily: "Inter_400Regular" }}>
+                            {[booking.passenger?.gender, booking.passenger?.age ? `${booking.passenger.age}y` : null].filter(Boolean).join(", ")}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  )}
+
                   {/* Active-trip detour badges */}
                   {activeTrip && detourKmExtra != null && detourMinExtra != null && (
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
