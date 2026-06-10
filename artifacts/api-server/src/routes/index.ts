@@ -13,6 +13,7 @@ import supportRouter from "./support";
 import statsRouter from "./stats";
 import matchRouter from "./match";
 import adminLogsRouter from "./admin-logs";
+import settingsRouter from "./settings";
 import pushTokenRouter from "./push-token";
 import meRouter from "./me";
 import driverLocationRouter from "./driver-location";
@@ -44,6 +45,7 @@ router.use(routeRouter);     // GET /route — road-following polyline via OSRM
 router.use(requireRole("admin"), usersRouter);
 router.use(requireRole("admin"), statsRouter);
 router.use(requireRole("admin"), adminLogsRouter);
+router.use(requireRole("admin"), settingsRouter);
 router.use(requireRole("admin"), supportRouter);
 
 export default router;

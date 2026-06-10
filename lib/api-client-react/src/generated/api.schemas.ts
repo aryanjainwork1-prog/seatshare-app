@@ -416,6 +416,27 @@ export interface AdminLogList {
   limit: number;
 }
 
+export type PlatformSettingsSource = typeof PlatformSettingsSource[keyof typeof PlatformSettingsSource];
+
+
+export const PlatformSettingsSource = {
+  db: 'db',
+  env: 'env',
+} as const;
+
+export interface PlatformSettings {
+  stalenessThresholdMinutes: number;
+  source: PlatformSettingsSource;
+}
+
+export interface UpdateSettingsInput {
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  stalenessThresholdMinutes: number;
+}
+
 export interface AdminLoginInput {
   email: string;
   password: string;

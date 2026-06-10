@@ -2400,3 +2400,29 @@ export const ListAdminLogsResponse = zod.object({
 })
 
 
+/**
+ * @summary Get platform settings
+ */
+export const GetSettingsResponse = zod.object({
+  "stalenessThresholdMinutes": zod.number(),
+  "source": zod.enum(['db', 'env'])
+})
+
+
+/**
+ * @summary Update platform settings
+ */
+export const updateSettingsBodyStalenessThresholdMinutesMax = 1440;
+
+
+
+export const UpdateSettingsBody = zod.object({
+  "stalenessThresholdMinutes": zod.number().min(1).max(updateSettingsBodyStalenessThresholdMinutesMax)
+})
+
+export const UpdateSettingsResponse = zod.object({
+  "stalenessThresholdMinutes": zod.number(),
+  "source": zod.enum(['db', 'env'])
+})
+
+

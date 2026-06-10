@@ -7,3 +7,4 @@ export * from "./payments";
 export * from "./ratings";
 export * from "./support-tickets";
 export * from "./admin-logs";
+export * from "./platform-settings";

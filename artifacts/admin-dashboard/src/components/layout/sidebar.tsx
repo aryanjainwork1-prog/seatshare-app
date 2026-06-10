@@ -13,6 +13,7 @@ import {
   X,
   MapPin,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { href: "/payments", label: "Payments", icon: CreditCard },
   { href: "/support", label: "Support", icon: LifeBuoy },
   { href: "/logs", label: "Activity Logs", icon: ScrollText },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {

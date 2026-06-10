@@ -1,18 +1,36 @@
 import { lt, eq, and, isNotNull, inArray } from "drizzle-orm";
-import { db, driverProfilesTable, adminLogsTable, usersTable } from "@workspace/db";
+import { db, driverProfilesTable, adminLogsTable, usersTable, platformSettingsTable } from "@workspace/db";
 import { logger } from "./logger";
 
+const STALENESS_KEY = "staleness_threshold_minutes";
 const DEFAULT_STALE_THRESHOLD_MINUTES = 15;
 
-function getThresholdMinutes(): number {
+function envThreshold(): number {
   const raw = process.env["DRIVER_STALE_THRESHOLD_MINUTES"];
   if (!raw) return DEFAULT_STALE_THRESHOLD_MINUTES;
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_STALE_THRESHOLD_MINUTES;
 }
 
+async function getThresholdMinutes(): Promise<number> {
+  try {
+    const rows = await db
+      .select()
+      .from(platformSettingsTable)
+      .where(eq(platformSettingsTable.key, STALENESS_KEY))
+      .limit(1);
+    if (rows.length > 0) {
+      const val = Number(rows[0]!.value);
+      if (Number.isFinite(val) && val > 0) return val;
+    }
+  } catch {
+    // DB unavailable — fall back to env
+  }
+  return envThreshold();
+}
+
 export async function sweepStaleDrivers(): Promise<void> {
-  const thresholdMinutes = getThresholdMinutes();
+  const thresholdMinutes = await getThresholdMinutes();
   const cutoff = new Date(Date.now() - thresholdMinutes * 60 * 1000);
 
   try {
@@ -72,7 +90,7 @@ const SWEEP_INTERVAL_MS = 60 * 1000;
 
 export function startStalenessSweep(): () => void {
   logger.info(
-    { thresholdMinutes: getThresholdMinutes(), intervalMs: SWEEP_INTERVAL_MS },
+    { intervalMs: SWEEP_INTERVAL_MS },
     "Starting driver staleness sweep",
   );
 

@@ -27,6 +27,7 @@ import Bookings from "@/pages/bookings";
 import Payments from "@/pages/payments";
 import Support from "@/pages/support";
 import Logs from "@/pages/logs";
+import Settings from "@/pages/settings";
 import LiveMap from "@/pages/live-map";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
@@ -105,6 +106,7 @@ function Router() {
               <Route path="/payments" component={Payments} />
               <Route path="/support" component={Support} />
               <Route path="/logs" component={Logs} />
+              <Route path="/settings" component={Settings} />
               <Route component={NotFound} />
             </Switch>
           </Shell>
