@@ -1,0 +1,77 @@
+My Review of the Plan
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PriorityAssessmentComment1 & 6 (Role)GoodThe proposed fix is clean and minimal. Changing the default logic in ModeContext + writing the initial mode on login is the right way.4 (Mumbai)GoodStraightforward and necessary.5 (Demo Mode)GoodWell-scoped. Protecting the existing driver live tracking is important.2, 3 & 7GoodSurgical changes only. Extracting LocationInput is a smart move.RiskLowNo dangerous changes to auth, WebSocket, or background location.
+Small Recommendations (Optional but better)
+Here are a few small improvements I suggest adding to the plan:
+
+Role Fix Enhancement
+When a user logs in for the first time (new account), also clear any old seatshare_mode value before writing the new one. This prevents old mode preferences from leaking.
+
+Demo Mode Discoverability
+Make the demo toggle slightly harder to find accidentally (e.g. long-press on the version number in Profile instead of always showing a "Developer" section). This keeps the app clean for normal users.
+
+Default Map Coordinates
+Good that you're changing it to Mumbai (19.0760, 72.8777). Also update the fallback in MapPickerModal if it has hardcoded coords.
+
+Demo Mode Scope
+Keep it exactly as planned. Don’t over-engineer it (no need for full mock backend in v1).
+
+
+
+Final Decision
+The plan is approved with the small additions above.
+
+Here’s the next prompt you should send to your Replit AI:
+
+Copy and paste this:
+
+The implementation plan you provided is approved with these small additions:
+
+When writing the initial mode on first login, also clear any previous seatshare_mode value from AsyncStorage to avoid old preferences leaking.
+Make the Demo Mode toggle slightly harder to discover accidentally (long-press on version number in Profile instead of always-visible section).
+Also update default map region in MapPickerModal.native.tsx to Mumbai coordinates.
+
+Now proceed with implementation.
+Order of implementation:
+
+First fix Priority 1 & 6 (Role persistence) — context/ModeContext.tsx and app/(auth)/login.tsx
+Then update location data to Mumbai (constants/locations.ts + related files)
+Then implement Demo Mode (create DemoModeContext, add toggle, add demo features)
+Finally do the passenger home polish (extract LocationInput, update default map coords)
+
+After finishing each major section, briefly summarize what was changed before moving to the next.
+Start now with Priority 1 & 6.

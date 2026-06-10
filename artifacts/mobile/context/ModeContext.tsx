@@ -32,6 +32,8 @@ export function ModeProvider({ children }: { children: ReactNode }) {
         const stored = await AsyncStorage.getItem(MODE_KEY);
         if (stored === "driver" && user?.role === "driver") {
           setModeState("driver");
+        } else if (stored === null && user?.role === "driver") {
+          setModeState("driver");
         } else {
           setModeState("passenger");
         }
