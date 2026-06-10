@@ -1,0 +1,52 @@
+You are working on the existing SeatShare Expo mobile app (using Expo Router).
+I have analyzed the current codebase. Here is the current state:
+Current Architecture Summary:
+
+Routing: Expo Router (file-based)
+Auth: context/AuthContext.tsx (JWT in SecureStore + user in AsyncStorage)
+Mode: context/ModeContext.tsx (separate mode = "passenger" | "driver")
+Role Selection: app/(auth)/welcome.tsx → passes role as URL param to login.tsx → sent during OTP verification
+Routing Logic: app/_layout.tsx handles auth gate + onboarding check
+Driver Tab: Conditionally shown in app/(tabs)/_layout.tsx only when mode === "driver" && user?.role === "driver"
+Maps: react-native-maps with .native.tsx / .tsx split (already has animated markers and background location)
+Location Data: Currently using Bangalore areas in constants/locations.ts
+
+Problems to Fix:
+Priority 1 & 6 (Most Important)
+
+The role chosen on the welcome screen is not strongly respected after login.
+ModeContext allows easy switching, which overrides the user’s initial choice.
+We need the initial “Start as Driver” or “Start as Passenger” selection to properly control the default experience.
+
+Priority 2, 3 & 7
+
+Passenger home (app/(tabs)/index.tsx) is very large (1298 lines). We need to improve the flow and polish without making it worse.
+Improve the map pin selection experience and overall booking feel.
+
+Priority 4
+
+Change location suggestions from Bangalore to Mumbai + Navi Mumbai focus.
+Make autocomplete smarter and location-aware.
+
+Priority 5
+
+Add a clean, toggleable Demo Mode for testing (passenger, driver, and admin simulation flows).
+
+Your Task:
+
+First, give me a clear implementation plan before writing any code. Include:
+Which files need to be modified
+How you will improve role persistence and initial routing
+How Demo Mode will work without breaking existing driver live tracking
+How you will update location data to Mumbai
+
+After I approve the plan, start implementing the changes.
+
+Rules:
+
+Do not break existing features (especially DriverSelfMap, background location, WebSocket driver tracking, and LiveDriverMap).
+Keep using the current Context + TanStack Query architecture.
+Make changes minimal and clean where possible.
+Focus on making the initial role choice actually matter.
+
+Start by giving me the implementation plan.
