@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { Search, Ban, CheckCircle2 } from "lucide-react";
+import { Search, Ban, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Users() {
@@ -107,6 +107,7 @@ export default function Users() {
               <TableHead>Contact</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Late Cancellations</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -119,13 +120,14 @@ export default function Users() {
                   <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[60px]" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-[80px] ml-auto" /></TableCell>
                 </TableRow>
               ))
             ) : data?.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No users found.
                 </TableCell>
               </TableRow>
@@ -153,6 +155,16 @@ export default function Users() {
                     <Badge variant={user.status === 'active' ? "default" : "destructive"} className={user.status === 'active' ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20" : ""}>
                       {user.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {(user.lateCancellations ?? 0) >= 3 ? (
+                      <span className="inline-flex items-center gap-1 text-destructive font-medium text-sm">
+                        <AlertTriangle className="h-3 w-3" />
+                        {user.lateCancellations}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">{user.lateCancellations ?? 0}</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {format(new Date(user.createdAt), "MMM d, yyyy")}

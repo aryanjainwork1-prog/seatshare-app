@@ -17,6 +17,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash"),
   refreshToken: text("refresh_token"),
   expoPushToken: text("expo_push_token"),
+  lateCancellations: integer("late_cancellations").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

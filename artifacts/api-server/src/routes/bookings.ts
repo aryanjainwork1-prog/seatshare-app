@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, SQL, count, desc } from "drizzle-orm";
+import { eq, and, SQL, count, desc, sql } from "drizzle-orm";
 import { db, bookingsTable, tripsTable, usersTable, driverProfilesTable } from "@workspace/db";
 import {
   ListBookingsQueryParams,
@@ -349,6 +349,12 @@ router.patch("/bookings/:id/cancel", async (req, res): Promise<void> => {
   if (!booking) {
     res.status(404).json({ error: "Booking not found" });
     return;
+  }
+
+  if (existing.status === "accepted") {
+    await db.update(usersTable)
+      .set({ lateCancellations: sql`${usersTable.lateCancellations} + 1` })
+      .where(eq(usersTable.id, booking.passengerId));
   }
 
   const enriched = await enrichBooking(booking);
