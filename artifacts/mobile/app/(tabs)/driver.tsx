@@ -33,6 +33,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 import { BANGALORE_AREAS } from "@/constants/locations";
+import { DriverSelfMap } from "@/components/DriverSelfMap";
 
 function LocationInput({
   value,
@@ -106,6 +107,8 @@ export default function DriverScreen() {
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
   const appStateRef = useRef(AppState.currentState);
 
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+
   const { data: profilesData, refetch: refetchProfile } = useListDriverProfiles(
     { userId: user?.id, limit: 1 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -167,13 +170,15 @@ export default function DriverScreen() {
         locationSubRef.current = await Location.watchPositionAsync(
           { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 20 },
           (loc) => {
+            const { latitude: lat, longitude: lng } = loc.coords;
+            setCurrentLocation({ lat, lng });
             if (wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(
                 JSON.stringify({
                   type: "location",
                   driverId: profileId,
-                  lat: loc.coords.latitude,
-                  lng: loc.coords.longitude,
+                  lat,
+                  lng,
                 }),
               );
             }
@@ -377,6 +382,16 @@ export default function DriverScreen() {
           disabled={updateProfileMutation.isPending}
         />
       </View>
+
+      {displayIsOnline && currentLocation && (
+        <View style={styles.mapSection}>
+          <DriverSelfMap
+            lat={currentLocation.lat}
+            lng={currentLocation.lng}
+            isOnline={displayIsOnline}
+          />
+        </View>
+      )}
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -602,6 +617,10 @@ const styles = StyleSheet.create({
   },
   onlineLabel: { fontSize: 16, marginBottom: 2 },
   onlineSub: { fontSize: 13 },
+  mapSection: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
   section: {
     padding: 16,
     gap: 10,
