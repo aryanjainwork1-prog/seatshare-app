@@ -5,6 +5,7 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 
 import type { MatchResult } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
+import { useRouteGeometry } from "@/hooks/useRouteGeometry";
 
 interface RoutePreviewMapProps {
   fromCoords: { lat: number; lng: number };
@@ -26,11 +27,20 @@ export function RoutePreviewMap({
   onDeselect,
 }: RoutePreviewMapProps) {
   const colors = useColors();
+  const { coordinates: roadCoords } = useRouteGeometry(fromCoords, toCoords);
 
   const midLat = (fromCoords.lat + toCoords.lat) / 2;
   const midLng = (fromCoords.lng + toCoords.lng) / 2;
   const latDelta = Math.abs(fromCoords.lat - toCoords.lat) * 2.2 + 0.02;
   const lngDelta = Math.abs(fromCoords.lng - toCoords.lng) * 2.2 + 0.02;
+
+  const routePolylineCoords =
+    roadCoords && roadCoords.length >= 2
+      ? roadCoords.map((c) => ({ latitude: c.lat, longitude: c.lng }))
+      : [
+          { latitude: fromCoords.lat, longitude: fromCoords.lng },
+          { latitude: toCoords.lat, longitude: toCoords.lng },
+        ];
 
   return (
     <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -71,10 +81,7 @@ export function RoutePreviewMap({
         onPress={() => onDeselect?.()}
       >
         <Polyline
-          coordinates={[
-            { latitude: fromCoords.lat, longitude: fromCoords.lng },
-            { latitude: toCoords.lat, longitude: toCoords.lng },
-          ]}
+          coordinates={routePolylineCoords}
           strokeColor="#6366f1"
           strokeWidth={3}
         />

@@ -16,6 +16,7 @@ import adminLogsRouter from "./admin-logs";
 import pushTokenRouter from "./push-token";
 import meRouter from "./me";
 import driverLocationRouter from "./driver-location";
+import routeRouter from "./route";
 
 const router: IRouter = Router();
 
@@ -37,6 +38,7 @@ router.use(driversRouter);   // GET list/profile + PATCH own profile; /verify gu
 router.use(matchRouter);     // POST /match — passengers search rides
 router.use(pushTokenRouter); // PATCH /me/push-token — register Expo push token
 router.use(driverLocationRouter); // POST /driver-location — background location update from driver
+router.use(routeRouter);     // GET /route — road-following polyline via OSRM
 
 // Admin-only routes
 router.use(requireRole("admin"), usersRouter);
