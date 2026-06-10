@@ -15,11 +15,12 @@ router.get("/ratings", async (req, res): Promise<void> => {
     return;
   }
 
-  const { ratedId, page = 1, limit = 20 } = parsed.data;
+  const { ratedId, raterId, page = 1, limit = 20 } = parsed.data;
   const offset = (page - 1) * limit;
 
   const conditions: SQL[] = [];
   if (ratedId) conditions.push(eq(ratingsTable.ratedId, ratedId));
+  if (raterId) conditions.push(eq(ratingsTable.raterId, raterId));
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 

@@ -1415,6 +1415,7 @@ export const GetPaymentResponse = zod.object({
  */
 export const ListRatingsQueryParams = zod.object({
   "ratedId": zod.coerce.number().optional(),
+  "raterId": zod.coerce.number().optional(),
   "page": zod.coerce.number().optional(),
   "limit": zod.coerce.number().optional()
 })

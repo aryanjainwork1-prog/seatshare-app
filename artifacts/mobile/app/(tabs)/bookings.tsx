@@ -1,10 +1,22 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useListBookings, useCancelBooking } from "@workspace/api-client-react";
+import { useListBookings, useCancelBooking, useCreateRating, useListRatings } from "@workspace/api-client-react";
 import type { Booking } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -29,8 +41,13 @@ const STATUS_LABELS: Record<string, string> = {
 
 const ACTIVE_STATUSES = new Set(["pending", "accepted", "in_progress"]);
 const TRACKABLE_STATUSES = new Set(["accepted", "in_progress"]);
-
 const CANCELLABLE_STATUSES = new Set(["pending", "accepted"]);
+
+interface RatingModalState {
+  booking: Booking;
+  driverName: string;
+  driverUserId: number;
+}
 
 export default function BookingsScreen() {
   const colors = useColors();
@@ -39,6 +56,24 @@ export default function BookingsScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const cancelBookingMutation = useCancelBooking();
+  const createRatingMutation = useCreateRating();
+
+  const [localRatedBookingIds, setLocalRatedBookingIds] = useState<Set<number>>(new Set());
+  const [ratingModal, setRatingModal] = useState<RatingModalState | null>(null);
+  const [starScore, setStarScore] = useState(0);
+  const [comment, setComment] = useState("");
+
+  const { data: ratingsData } = useListRatings(
+    { raterId: user?.id, limit: 200 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { query: { enabled: !!user?.id } as any },
+  );
+
+  const serverRatedBookingIds = new Set(
+    (ratingsData?.data ?? []).map((r) => r.bookingId),
+  );
+
+  const ratedBookingIds = new Set([...serverRatedBookingIds, ...localRatedBookingIds]);
 
   const { data, isLoading, refetch, isRefetching } = useListBookings(
     { passengerId: user?.id, limit: 50 },
@@ -49,6 +84,53 @@ export default function BookingsScreen() {
   const bookings = data?.data ?? [];
   const active = bookings.filter((b) => ACTIVE_STATUSES.has(b.status));
   const past = bookings.filter((b) => !ACTIVE_STATUSES.has(b.status));
+
+  function openRatingModal(booking: Booking) {
+    const trip = booking.trip;
+    const driverProfile = (trip as { driverProfile?: { userId?: number; user?: { name?: string } } } | undefined)?.driverProfile;
+    const driverUserId = driverProfile?.userId;
+    const driverName = driverProfile?.user?.name ?? "Driver";
+
+    if (!driverUserId) {
+      Alert.alert("Unable to Rate", "Driver information is not available for this booking.");
+      return;
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setStarScore(0);
+    setComment("");
+    setRatingModal({ booking, driverName, driverUserId });
+  }
+
+  function closeRatingModal() {
+    setRatingModal(null);
+  }
+
+  async function submitRating() {
+    if (!ratingModal || !user?.id) return;
+    if (starScore === 0) {
+      Alert.alert("Select a Rating", "Please tap a star to rate your ride.");
+      return;
+    }
+
+    try {
+      await createRatingMutation.mutateAsync({
+        data: {
+          bookingId: ratingModal.booking.id,
+          raterId: user.id,
+          ratedId: ratingModal.driverUserId,
+          score: starScore,
+          comment: comment.trim() || undefined,
+        },
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setLocalRatedBookingIds((prev) => new Set([...prev, ratingModal.booking.id]));
+      closeRatingModal();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not submit rating";
+      Alert.alert("Rating Failed", msg);
+    }
+  }
 
   function handleCancel(booking: Booking) {
     Alert.alert(
@@ -96,10 +178,14 @@ export default function BookingsScreen() {
     const isActive = ACTIVE_STATUSES.has(booking.status);
     const isTrackable = TRACKABLE_STATUSES.has(booking.status);
 
-    const driverProfile = (trip as { driverProfile?: { user?: { name?: string }; vehicle?: { make?: string; model?: string; color?: string; licensePlate?: string }; rating?: number } } | undefined)?.driverProfile;
+    const driverProfile = (trip as { driverProfile?: { userId?: number; user?: { name?: string }; vehicle?: { make?: string; model?: string; color?: string; licensePlate?: string }; rating?: number } } | undefined)?.driverProfile;
     const driverName = driverProfile?.user?.name;
     const vehicle = driverProfile?.vehicle;
     const rating = driverProfile?.rating;
+
+    const isCompleted = booking.status === "completed";
+    const hasDriverUserId = !!driverProfile?.userId;
+    const showRatePrompt = isCompleted && hasDriverUserId && !ratedBookingIds.has(booking.id);
 
     return (
       <Pressable
@@ -240,6 +326,21 @@ export default function BookingsScreen() {
           </Pressable>
         )}
 
+        {showRatePrompt && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.rateBtn,
+              { backgroundColor: "#facc1518", borderColor: "#facc1555", opacity: pressed ? 0.8 : 1 },
+            ]}
+            onPress={() => openRatingModal(booking)}
+          >
+            <Ionicons name="star-outline" size={15} color="#facc15" />
+            <Text style={[styles.rateBtnText, { color: "#b59000", fontFamily: "Inter_600SemiBold" }]}>
+              Rate Your Ride
+            </Text>
+          </Pressable>
+        )}
+
         <Text style={[styles.dateText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
           Booked{" "}
           {new Date(booking.createdAt).toLocaleDateString("en-IN", {
@@ -307,6 +408,88 @@ export default function BookingsScreen() {
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={ratingModal !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={closeRatingModal}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={closeRatingModal}>
+          <Pressable style={[styles.modalSheet, { backgroundColor: colors.card }]} onPress={() => {}}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+              Rate Your Ride
+            </Text>
+            {ratingModal && (
+              <Text style={[styles.modalSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                How was your trip with {ratingModal.driverName}?
+              </Text>
+            )}
+
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Pressable
+                  key={n}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setStarScore(n);
+                  }}
+                  style={styles.starBtn}
+                >
+                  <Ionicons
+                    name={n <= starScore ? "star" : "star-outline"}
+                    size={36}
+                    color={n <= starScore ? "#facc15" : colors.mutedForeground}
+                  />
+                </Pressable>
+              ))}
+            </View>
+
+            {starScore > 0 && (
+              <Text style={[styles.scoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                {["", "Poor", "Fair", "Good", "Great", "Excellent"][starScore]}
+              </Text>
+            )}
+
+            <TextInput
+              style={[
+                styles.commentInput,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.foreground,
+                  fontFamily: "Inter_400Regular",
+                },
+              ]}
+              placeholder="Add a comment (optional)"
+              placeholderTextColor={colors.mutedForeground}
+              value={comment}
+              onChangeText={setComment}
+              multiline
+              maxLength={300}
+            />
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.submitBtn,
+                { backgroundColor: colors.primary, opacity: pressed || createRatingMutation.isPending ? 0.75 : 1 },
+              ]}
+              onPress={submitRating}
+              disabled={createRatingMutation.isPending}
+            >
+              <Text style={[styles.submitBtnText, { fontFamily: "Inter_600SemiBold" }]}>
+                {createRatingMutation.isPending ? "Submitting…" : "Submit Rating"}
+              </Text>
+            </Pressable>
+
+            <Pressable onPress={closeRatingModal} style={styles.skipBtn}>
+              <Text style={[styles.skipBtnText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Skip for now
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -433,6 +616,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   cancelBtnText: { fontSize: 14 },
+  rateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingVertical: 10,
+  },
+  rateBtnText: { fontSize: 14 },
   dateText: { fontSize: 12 },
   emptyState: {
     paddingTop: 80,
@@ -441,4 +634,62 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 18, marginTop: 8 },
   emptyText: { fontSize: 14, textAlign: "center" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 28,
+    paddingBottom: 40,
+    gap: 16,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 20,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: -6,
+  },
+  starsRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 4,
+  },
+  starBtn: {
+    padding: 4,
+  },
+  scoreLabel: {
+    fontSize: 14,
+    marginTop: -8,
+  },
+  commentInput: {
+    width: "100%",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    minHeight: 72,
+    textAlignVertical: "top",
+  },
+  submitBtn: {
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  submitBtnText: {
+    color: "#fff",
+    fontSize: 15,
+  },
+  skipBtn: {
+    paddingVertical: 4,
+  },
+  skipBtnText: {
+    fontSize: 13,
+  },
 });

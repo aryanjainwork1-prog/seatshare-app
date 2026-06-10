@@ -461,6 +461,7 @@ limit?: number;
 
 export type ListRatingsParams = {
 ratedId?: number;
+raterId?: number;
 page?: number;
 limit?: number;
 };

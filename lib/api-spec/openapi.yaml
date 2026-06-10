@@ -806,6 +806,10 @@ paths:
           schema:
             type: integer
         - in: query
+          name: raterId
+          schema:
+            type: integer
+        - in: query
           name: page
           schema:
             type: integer
