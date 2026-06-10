@@ -21,6 +21,8 @@ import type { MatchResult } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
+import { useRecentSearches } from "@/hooks/useRecentSearches";
+import type { RecentSearch } from "@/hooks/useRecentSearches";
 import { MapPickerModal } from "@/components/MapPickerModal";
 import type { PickedLocation } from "@/components/MapPickerModal";
 import { RoutePreviewMap } from "@/components/RoutePreviewMap";
@@ -46,6 +48,7 @@ function LocationInput({
   colors,
   onMapPress,
   hasPinnedCoords,
+  recents,
 }: {
   value: string;
   onChangeText: (t: string) => void;
@@ -56,6 +59,7 @@ function LocationInput({
   colors: ReturnType<typeof useColors>;
   onMapPress?: () => void;
   hasPinnedCoords?: boolean;
+  recents?: RecentSearch[];
 }) {
   const [focused, setFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
@@ -111,6 +115,20 @@ function LocationInput({
     setSuggestions([]);
     setFocused(false);
   }
+
+  function handlePickRecent(r: RecentSearch) {
+    if (onSelectLocation) {
+      onSelectLocation(r.displayName, r.lat, r.lng);
+    } else {
+      onChangeText(r.displayName);
+    }
+    setSuggestions([]);
+    setFocused(false);
+  }
+
+  const showRecents =
+    focused && value.trim().length < 3 && recents && recents.length > 0;
+  const showSuggestions = focused && suggestions.length > 0 && !showRecents;
 
   return (
     <View>
@@ -175,7 +193,56 @@ function LocationInput({
           </Pressable>
         )}
       </View>
-      {focused && suggestions.length > 0 && (
+      {showRecents && (
+        <View
+          style={[
+            styles.suggestions,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View
+            style={[
+              styles.recentsHeader,
+              { borderBottomColor: colors.border },
+            ]}
+          >
+            <Feather name="clock" size={11} color={colors.mutedForeground} />
+            <Text
+              style={[
+                styles.recentsHeaderText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                },
+              ]}
+            >
+              Recent
+            </Text>
+          </View>
+          {recents!.map((r) => (
+            <Pressable
+              key={r.displayName}
+              style={[
+                styles.suggestionItem,
+                { borderBottomColor: colors.border },
+              ]}
+              onPress={() => handlePickRecent(r)}
+            >
+              <Feather name="rotate-ccw" size={12} color={colors.mutedForeground} />
+              <Text
+                style={[
+                  styles.suggestionText,
+                  { color: colors.foreground, fontFamily: "Inter_400Regular" },
+                ]}
+                numberOfLines={2}
+              >
+                {r.displayName}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+      {showSuggestions && (
         <View
           style={[
             styles.suggestions,
@@ -231,6 +298,7 @@ export default function FindRidesScreen() {
   const [emailBanner, setEmailBanner] = useState<"pending" | "dev_skip" | null>(null);
 
   const matchMutation = useMatchDrivers();
+  const { recents, saveRecent } = useRecentSearches();
 
   useEffect(() => {
     AsyncStorage.getItem("seatshare_email_verified").then((v) => {
@@ -287,12 +355,14 @@ export default function FindRidesScreen() {
   function handleFromSelect(text: string, lat: number, lng: number) {
     setFromText(text);
     setFromCoords({ lat, lng });
+    saveRecent({ displayName: text, lat, lng });
     Haptics.selectionAsync();
   }
 
   function handleToSelect(text: string, lat: number, lng: number) {
     setToText(text);
     setToCoords({ lat, lng });
+    saveRecent({ displayName: text, lat, lng });
     Haptics.selectionAsync();
   }
 
@@ -302,11 +372,13 @@ export default function FindRidesScreen() {
       const coords = { lat: picked.lat, lng: picked.lng };
       setFromCoords(coords);
       AsyncStorage.setItem("seatshare_last_from_coords", JSON.stringify(coords)).catch(() => {});
+      saveRecent({ displayName: picked.address, lat: picked.lat, lng: picked.lng });
     } else if (mapPicker === "to") {
       setToText(picked.address);
       const coords = { lat: picked.lat, lng: picked.lng };
       setToCoords(coords);
       AsyncStorage.setItem("seatshare_last_to_coords", JSON.stringify(coords)).catch(() => {});
+      saveRecent({ displayName: picked.address, lat: picked.lat, lng: picked.lng });
     }
     setMapPicker(null);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -851,6 +923,7 @@ export default function FindRidesScreen() {
               colors={colors}
               hasPinnedCoords={!!fromCoords}
               onMapPress={() => setMapPicker("from")}
+              recents={recents}
             />
 
             <LocationInput
@@ -863,6 +936,7 @@ export default function FindRidesScreen() {
               colors={colors}
               hasPinnedCoords={!!toCoords}
               onMapPress={() => setMapPicker("to")}
+              recents={recents}
             />
 
             <Pressable
@@ -1129,6 +1203,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   suggestionText: { fontSize: 13, flex: 1 },
+  recentsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+  },
+  recentsHeaderText: { fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase" },
   searchBtn: {
     height: 46,
     borderRadius: 12,
