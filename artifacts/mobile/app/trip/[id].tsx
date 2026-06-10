@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -24,6 +25,14 @@ import { LiveDriverMap } from "@/components/LiveDriverMap";
 
 const LIVE_STATUSES = ["accepted", "in_progress"];
 
+const CANCEL_REASONS = [
+  "Plans changed",
+  "Found another ride",
+  "Booked by mistake",
+  "Emergency",
+  "Other",
+];
+
 export default function TripDetailScreen() {
   const { id, bookingId } = useLocalSearchParams<{ id: string; bookingId?: string }>();
   const colors = useColors();
@@ -33,6 +42,8 @@ export default function TripDetailScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const [newBooking, setNewBooking] = useState<Booking | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const tripId = parseInt(id ?? "0", 10);
   const parsedBookingId = bookingId ? parseInt(bookingId, 10) : undefined;
@@ -65,29 +76,51 @@ export default function TripDetailScreen() {
 
   const isLoading = tripLoading || (!!parsedBookingId && bookingLoading);
 
-  async function handleCancelBooking() {
+  function handleCancelBooking() {
     if (!activeBooking) return;
-    Alert.alert(
-      "Cancel Ride",
-      "Are you sure you want to cancel this booking?",
-      [
-        { text: "Keep Ride", style: "cancel" },
-        {
-          text: "Cancel Ride",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await cancelBookingMutation.mutateAsync({ id: activeBooking.id, data: {} });
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              router.replace("/(tabs)/bookings");
-            } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : "Could not cancel booking";
-              Alert.alert("Cancellation failed", msg);
-            }
+    if (activeBooking.status === "accepted") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setCancelReason("");
+      setShowCancelModal(true);
+    } else {
+      Alert.alert(
+        "Cancel Ride",
+        "Are you sure you want to cancel this booking?",
+        [
+          { text: "Keep Ride", style: "cancel" },
+          {
+            text: "Cancel Ride",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await cancelBookingMutation.mutateAsync({ id: activeBooking.id, data: {} });
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                router.replace("/(tabs)/bookings");
+              } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : "Could not cancel booking";
+                Alert.alert("Cancellation failed", msg);
+              }
+            },
           },
-        },
-      ],
-    );
+        ],
+      );
+    }
+  }
+
+  async function confirmCancelModal() {
+    if (!activeBooking) return;
+    try {
+      await cancelBookingMutation.mutateAsync({
+        id: activeBooking.id,
+        data: cancelReason ? { reason: cancelReason } : {},
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setShowCancelModal(false);
+      router.replace("/(tabs)/bookings");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not cancel booking";
+      Alert.alert("Cancellation failed", msg);
+    }
   }
 
   async function handleBook() {
@@ -335,6 +368,83 @@ export default function TripDetailScreen() {
             </Pressable>
           )}
         </ScrollView>
+
+        {/* Cancel modal — shown for accepted bookings only */}
+        <Modal
+          visible={showCancelModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowCancelModal(false)}
+        >
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowCancelModal(false)}>
+            <Pressable style={[styles.modalSheet, { backgroundColor: colors.card }]} onPress={() => {}}>
+              <View style={[styles.cancelWarningBanner, { backgroundColor: `${colors.destructive}15`, borderColor: `${colors.destructive}40` }]}>
+                <Feather name="alert-triangle" size={18} color={colors.destructive} />
+                <Text style={[styles.cancelWarningText, { color: colors.destructive, fontFamily: "Inter_600SemiBold" }]}>
+                  Driver already confirmed
+                </Text>
+              </View>
+              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Cancel Ride?
+              </Text>
+              <Text style={[styles.modalSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Your driver has accepted this ride and is on the way to pick you up. Cancelling now may affect your passenger reputation.
+              </Text>
+
+              <Text style={[styles.reasonLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                Reason for cancelling
+              </Text>
+              <View style={styles.reasonsList}>
+                {CANCEL_REASONS.map((reason) => (
+                  <Pressable
+                    key={reason}
+                    style={[
+                      styles.reasonOption,
+                      {
+                        borderColor: cancelReason === reason ? colors.destructive : colors.border,
+                        backgroundColor: cancelReason === reason ? `${colors.destructive}10` : colors.background,
+                      },
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setCancelReason(reason);
+                    }}
+                  >
+                    <View style={[
+                      styles.reasonRadio,
+                      {
+                        borderColor: cancelReason === reason ? colors.destructive : colors.border,
+                        backgroundColor: cancelReason === reason ? colors.destructive : "transparent",
+                      },
+                    ]} />
+                    <Text style={[styles.reasonText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
+                      {reason}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.confirmCancelBtn,
+                  { backgroundColor: colors.destructive, opacity: pressed || cancelBookingMutation.isPending || !cancelReason ? 0.6 : 1 },
+                ]}
+                onPress={confirmCancelModal}
+                disabled={cancelBookingMutation.isPending || !cancelReason}
+              >
+                <Text style={[styles.confirmCancelBtnText, { fontFamily: "Inter_600SemiBold" }]}>
+                  {cancelBookingMutation.isPending ? "Cancelling…" : "Confirm Cancellation"}
+                </Text>
+              </Pressable>
+
+              <Pressable onPress={() => setShowCancelModal(false)} style={styles.keepRideBtn}>
+                <Text style={[styles.keepRideBtnText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  Keep my ride
+                </Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     );
   }
@@ -639,6 +749,59 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cancelBtnText: { fontSize: 14 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 28,
+    paddingBottom: 44,
+    gap: 16,
+    alignItems: "center",
+  },
+  cancelWarningBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignSelf: "stretch",
+  },
+  cancelWarningText: { fontSize: 14 },
+  modalTitle: { fontSize: 20 },
+  modalSubtitle: { fontSize: 14, textAlign: "center", marginTop: -6 },
+  reasonLabel: { fontSize: 14, alignSelf: "flex-start" },
+  reasonsList: { width: "100%", gap: 8 },
+  reasonOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  reasonRadio: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+  },
+  reasonText: { fontSize: 14 },
+  confirmCancelBtn: {
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  confirmCancelBtnText: { color: "#fff", fontSize: 15 },
+  keepRideBtn: { paddingVertical: 4 },
+  keepRideBtnText: { fontSize: 14 },
   viewBookingsBtn: {
     width: "100%",
     height: 52,
