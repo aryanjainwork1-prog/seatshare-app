@@ -50,6 +50,7 @@ export default function FindRidesScreen() {
   const [mapPicker, setMapPicker] = useState<null | "from" | "to">(null);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [wasAutoSearch, setWasAutoSearch] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [emailBanner, setEmailBanner] = useState<"pending" | "dev_skip" | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -101,10 +102,12 @@ export default function FindRidesScreen() {
               });
               setMatches(result.matches ?? []);
               setHasSearched(true);
+              setWasAutoSearch(true);
               setSelectedMatchId(null);
             } catch {
               setMatches([]);
               setHasSearched(true);
+              setWasAutoSearch(true);
               setSelectedMatchId(null);
             }
           }
@@ -352,10 +355,12 @@ export default function FindRidesScreen() {
       });
       setMatches(result.matches ?? []);
       setHasSearched(true);
+      setWasAutoSearch(false);
       setSelectedMatchId(null);
     } catch {
       setMatches([]);
       setHasSearched(true);
+      setWasAutoSearch(false);
       setSelectedMatchId(null);
     }
   }
@@ -742,56 +747,130 @@ export default function FindRidesScreen() {
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 {hasSearched ? (
-                  <>
-                    <Feather
-                      name="search"
-                      size={40}
-                      color={colors.mutedForeground}
-                    />
-                    <Text
-                      style={[
-                        styles.emptyTitle,
-                        {
-                          color: colors.foreground,
-                          fontFamily: "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      No rides found
-                    </Text>
-                    <Text
-                      style={[
-                        styles.emptyText,
-                        {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_400Regular",
-                        },
-                      ]}
-                    >
-                      Try a different time or destination
-                    </Text>
-                    {isDemoMode && (
-                      <View
+                  wasAutoSearch ? (
+                    <>
+                      <View style={[styles.emptyIconWrap, { backgroundColor: `${colors.mutedForeground}15` }]}>
+                        <Feather name="map" size={28} color={colors.mutedForeground} />
+                      </View>
+                      <Text
                         style={[
-                          styles.demoBanner,
+                          styles.emptyTitle,
+                          { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                        ]}
+                      >
+                        No rides on this route right now
+                      </Text>
+                      <Text
+                        style={[
+                          styles.emptyText,
+                          { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+                        ]}
+                      >
+                        No drivers are running this route at the moment. You can adjust your pickup or destination, or try again later.
+                      </Text>
+                      <View style={styles.emptyActions}>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.emptyActionBtn,
+                            styles.emptyActionBtnPrimary,
+                            { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 },
+                          ]}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setHasSearched(false);
+                            setWasAutoSearch(false);
+                          }}
+                        >
+                          <Feather name="sliders" size={14} color={colors.primaryForeground} />
+                          <Text style={[styles.emptyActionBtnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
+                            Adjust search
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.emptyActionBtn,
+                            styles.emptyActionBtnSecondary,
+                            { borderColor: colors.border, opacity: pressed || matchMutation.isPending ? 0.7 : 1 },
+                          ]}
+                          onPress={() => handleSearch()}
+                          disabled={matchMutation.isPending}
+                        >
+                          {matchMutation.isPending ? (
+                            <ActivityIndicator size="small" color={colors.foreground} />
+                          ) : (
+                            <Feather name="refresh-cw" size={14} color={colors.foreground} />
+                          )}
+                          <Text style={[styles.emptyActionBtnText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                            Try again
+                          </Text>
+                        </Pressable>
+                      </View>
+                      {isDemoMode && (
+                        <View
+                          style={[
+                            styles.demoBanner,
+                            { backgroundColor: `${colors.primary}18`, borderColor: `${colors.primary}44` },
+                          ]}
+                        >
+                          <Feather name="zap" size={14} color={colors.primary} />
+                          <Text style={[styles.demoBannerText, { color: colors.primary, fontFamily: "Inter_400Regular" }]}>
+                            Demo Mode: log in as a driver to post trips, then search as a passenger to test the full booking flow.
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Feather
+                        name="search"
+                        size={40}
+                        color={colors.mutedForeground}
+                      />
+                      <Text
+                        style={[
+                          styles.emptyTitle,
                           {
-                            backgroundColor: `${colors.primary}18`,
-                            borderColor: `${colors.primary}44`,
+                            color: colors.foreground,
+                            fontFamily: "Inter_600SemiBold",
                           },
                         ]}
                       >
-                        <Feather name="zap" size={14} color={colors.primary} />
-                        <Text
+                        No rides found
+                      </Text>
+                      <Text
+                        style={[
+                          styles.emptyText,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_400Regular",
+                          },
+                        ]}
+                      >
+                        Try a different time or destination
+                      </Text>
+                      {isDemoMode && (
+                        <View
                           style={[
-                            styles.demoBannerText,
-                            { color: colors.primary, fontFamily: "Inter_400Regular" },
+                            styles.demoBanner,
+                            {
+                              backgroundColor: `${colors.primary}18`,
+                              borderColor: `${colors.primary}44`,
+                            },
                           ]}
                         >
-                          Demo Mode: log in as a driver to post trips, then search as a passenger to test the full booking flow.
-                        </Text>
-                      </View>
-                    )}
-                  </>
+                          <Feather name="zap" size={14} color={colors.primary} />
+                          <Text
+                            style={[
+                              styles.demoBannerText,
+                              { color: colors.primary, fontFamily: "Inter_400Regular" },
+                            ]}
+                          >
+                            Demo Mode: log in as a driver to post trips, then search as a passenger to test the full booking flow.
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  )
                 ) : (
                   <>
                     <Feather
@@ -1074,8 +1153,35 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     gap: 12,
   },
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
   emptyTitle: { fontSize: 18, marginTop: 8 },
   emptyText: { fontSize: 14, textAlign: "center", paddingHorizontal: 32 },
+  emptyActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+    paddingHorizontal: 16,
+  },
+  emptyActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 12,
+  },
+  emptyActionBtnPrimary: {},
+  emptyActionBtnSecondary: {
+    borderWidth: 1,
+  },
+  emptyActionBtnText: { fontSize: 14 },
   demoBanner: {
     flexDirection: "row",
     alignItems: "flex-start",
