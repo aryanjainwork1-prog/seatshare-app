@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { router } from "expo-router";
@@ -53,6 +54,8 @@ import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 import { MUMBAI_AREAS } from "@/constants/locations";
 import { DriverSelfMap } from "@/components/DriverSelfMap";
+
+const DRIVER_ONLINE_INTENT_KEY = "seatshare_driver_online_intent";
 
 const DEPARTURE_OPTIONS = [
   { label: "Now", offsetMs: 0 },
@@ -155,6 +158,9 @@ export default function DriverScreen() {
 
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [bgTaskStopped, setBgTaskStopped] = useState(false);
+  const [autoOfflineBanner, setAutoOfflineBanner] = useState(false);
+  const manualOfflineRef = useRef(false);
+  const wasIntendingOnlineRef = useRef(false);
 
   const { data: profilesData, refetch: refetchProfile } = useListDriverProfiles(
     { userId: user?.id, limit: 1 },
@@ -167,9 +173,27 @@ export default function DriverScreen() {
   const [localIsOnline, setLocalIsOnline] = useState<boolean | null>(null);
   const displayIsOnline = localIsOnline !== null ? localIsOnline : !!driverProfile?.isOnline;
 
+  // Seed wasIntendingOnlineRef from AsyncStorage so cold-start detection works
+  useEffect(() => {
+    AsyncStorage.getItem(DRIVER_ONLINE_INTENT_KEY).then((val) => {
+      if (val === "true") wasIntendingOnlineRef.current = true;
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (driverProfile !== undefined) {
-      setLocalIsOnline(driverProfile?.isOnline ?? false);
+      const serverIsOnline = driverProfile?.isOnline ?? false;
+      if (serverIsOnline) {
+        // Server confirms online — update stored intent, clear any stale banner
+        wasIntendingOnlineRef.current = true;
+        manualOfflineRef.current = false;
+        setAutoOfflineBanner(false);
+        AsyncStorage.setItem(DRIVER_ONLINE_INTENT_KEY, "true").catch(() => {});
+      } else if (wasIntendingOnlineRef.current && !manualOfflineRef.current) {
+        // Driver intended to be online but server now says offline → auto-taken offline
+        setAutoOfflineBanner(true);
+      }
+      setLocalIsOnline(serverIsOnline);
     }
   }, [driverProfile?.isOnline]);
 
@@ -301,6 +325,10 @@ export default function DriverScreen() {
         } catch {
           stopTokenRefreshInterval();
           await stopAllTracking();
+          // Mark as manual so the auto-offline banner is suppressed (alert shown instead)
+          manualOfflineRef.current = true;
+          wasIntendingOnlineRef.current = false;
+          AsyncStorage.setItem(DRIVER_ONLINE_INTENT_KEY, "false").catch(() => {});
           try {
             await updateProfileMutationRef.current.mutateAsync({
               id: profileId,
@@ -409,6 +437,8 @@ export default function DriverScreen() {
       ) {
         stopForegroundTracking();
       } else if (nextState === "active" && prev !== "active") {
+        // Refetch profile so we detect if server auto-took us offline while backgrounded
+        refetchProfile();
         checkAndClearBgStoppedFlag().then((wasStopped) => {
           if (wasStopped) {
             Alert.alert(
@@ -422,7 +452,7 @@ export default function DriverScreen() {
       }
     });
     return () => subscription.remove();
-  }, [displayIsOnline, driverProfileId, startForegroundTracking, stopForegroundTracking]);
+  }, [displayIsOnline, driverProfileId, refetchProfile, startForegroundTracking, stopForegroundTracking]);
 
   async function ensureDriverProfile(): Promise<number | null> {
     if (driverProfileId) return driverProfileId;
@@ -440,6 +470,16 @@ export default function DriverScreen() {
     const profileId = await ensureDriverProfile();
     if (!profileId) return;
     const newVal = !displayIsOnline;
+    if (newVal) {
+      // Going online — clear auto-offline banner and manual flag
+      manualOfflineRef.current = false;
+      setAutoOfflineBanner(false);
+    } else {
+      // Going offline intentionally — suppress future auto-offline banner
+      manualOfflineRef.current = true;
+      wasIntendingOnlineRef.current = false;
+      AsyncStorage.setItem(DRIVER_ONLINE_INTENT_KEY, "false").catch(() => {});
+    }
     setLocalIsOnline(newVal);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -744,6 +784,19 @@ export default function DriverScreen() {
             Location sharing stopped unexpectedly. Toggle offline then back online to resume.
           </Text>
         </View>
+      )}
+
+      {autoOfflineBanner && !displayIsOnline && (
+        <Pressable
+          style={[styles.demoBanner, { backgroundColor: "#d9770618", borderColor: "#d9770655", flexDirection: "row", alignItems: "flex-start" }]}
+          onPress={() => setAutoOfflineBanner(false)}
+        >
+          <Feather name="wifi-off" size={13} color="#d97706" style={{ marginTop: 1 }} />
+          <Text style={[styles.demoBannerText, { color: "#d97706", fontFamily: "Inter_400Regular" }]}>
+            You were automatically taken offline because your location stopped updating. Toggle back online when ready.
+          </Text>
+          <Feather name="x" size={13} color="#d97706" style={{ marginTop: 1, marginLeft: 4 }} />
+        </Pressable>
       )}
 
       {isDemoMode && (
