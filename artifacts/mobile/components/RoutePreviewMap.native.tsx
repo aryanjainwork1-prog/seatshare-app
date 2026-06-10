@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 
@@ -17,6 +17,27 @@ interface RoutePreviewMapProps {
   onDeselect?: () => void;
 }
 
+function boundingRegion(
+  points: { lat: number; lng: number }[],
+  paddingFactor = 2.0,
+  minDelta = 0.02,
+) {
+  const lats = points.map((p) => p.lat);
+  const lngs = points.map((p) => p.lng);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const latDelta = Math.max((maxLat - minLat) * paddingFactor, minDelta);
+  const lngDelta = Math.max((maxLng - minLng) * paddingFactor, minDelta);
+  return {
+    latitude: (minLat + maxLat) / 2,
+    longitude: (minLng + maxLng) / 2,
+    latitudeDelta: latDelta,
+    longitudeDelta: lngDelta,
+  };
+}
+
 export function RoutePreviewMap({
   fromCoords,
   toCoords,
@@ -28,11 +49,9 @@ export function RoutePreviewMap({
 }: RoutePreviewMapProps) {
   const colors = useColors();
   const { coordinates: roadCoords } = useRouteGeometry(fromCoords, toCoords);
+  const mapRef = useRef<MapView>(null);
 
-  const midLat = (fromCoords.lat + toCoords.lat) / 2;
-  const midLng = (fromCoords.lng + toCoords.lng) / 2;
-  const latDelta = Math.abs(fromCoords.lat - toCoords.lat) * 2.2 + 0.02;
-  const lngDelta = Math.abs(fromCoords.lng - toCoords.lng) * 2.2 + 0.02;
+  const defaultRegion = boundingRegion([fromCoords, toCoords], 2.2);
 
   const routePolylineCoords =
     roadCoords && roadCoords.length >= 2
@@ -41,6 +60,23 @@ export function RoutePreviewMap({
           { latitude: fromCoords.lat, longitude: fromCoords.lng },
           { latitude: toCoords.lat, longitude: toCoords.lng },
         ];
+
+  useEffect(() => {
+    if (selectedMatchId == null) {
+      mapRef.current?.animateToRegion(defaultRegion, 400);
+      return;
+    }
+    const match = matches?.find((m) => m.trip.id === selectedMatchId);
+    if (!match) return;
+    const driverPickupLat = match.trip.originLat;
+    const driverPickupLng = match.trip.originLng;
+    const region = boundingRegion(
+      [fromCoords, { lat: driverPickupLat, lng: driverPickupLng }],
+      2.4,
+    );
+    mapRef.current?.animateToRegion(region, 400);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMatchId]);
 
   return (
     <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -67,13 +103,9 @@ export function RoutePreviewMap({
       </View>
 
       <MapView
+        ref={mapRef}
         style={styles.map}
-        region={{
-          latitude: midLat,
-          longitude: midLng,
-          latitudeDelta: latDelta,
-          longitudeDelta: lngDelta,
-        }}
+        initialRegion={defaultRegion}
         scrollEnabled={false}
         zoomEnabled={false}
         pitchEnabled={false}
