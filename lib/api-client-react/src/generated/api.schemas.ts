@@ -60,6 +60,8 @@ export interface Vehicle {
   color: string;
   licensePlate: string;
   capacity: number;
+  bodyType?: string | null;
+  conditionNote?: string | null;
   createdAt: string;
 }
 
@@ -143,6 +145,8 @@ export interface VehicleInput {
   color: string;
   licensePlate: string;
   capacity: number;
+  bodyType?: string | null;
+  conditionNote?: string | null;
 }
 
 export interface VehicleUpdate {
@@ -152,6 +156,8 @@ export interface VehicleUpdate {
   color?: string;
   licensePlate?: string;
   capacity?: number;
+  bodyType?: string | null;
+  conditionNote?: string | null;
 }
 
 export interface Trip {

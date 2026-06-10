@@ -14,4 +14,6 @@ export interface VehicleInput {
   color: string;
   licensePlate: string;
   capacity: number;
+  bodyType?: string | null;
+  conditionNote?: string | null;
 }

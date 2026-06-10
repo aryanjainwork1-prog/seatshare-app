@@ -53,6 +53,14 @@ router.post("/trips", async (req, res): Promise<void> => {
     return;
   }
 
+  if (parsed.data.vehicleId != null) {
+    const [v] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, parsed.data.vehicleId));
+    if (!v || v.driverProfileId !== parsed.data.driverProfileId) {
+      res.status(400).json({ error: "Vehicle does not belong to this driver" });
+      return;
+    }
+  }
+
   const [trip] = await db.insert(tripsTable).values({
     ...parsed.data,
     departureTime: new Date(parsed.data.departureTime),

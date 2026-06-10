@@ -12,6 +12,8 @@ export const vehiclesTable = pgTable("vehicles", {
   color: text("color").notNull(),
   licensePlate: text("license_plate").notNull().unique(),
   capacity: integer("capacity").notNull(),
+  bodyType: text("body_type"),
+  conditionNote: text("condition_note"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

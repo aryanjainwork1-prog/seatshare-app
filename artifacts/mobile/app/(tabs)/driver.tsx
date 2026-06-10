@@ -30,6 +30,7 @@ import {
   useCreateDriverProfile,
   useCreateTrip,
   useCreateVehicle,
+  useDeleteVehicle,
   useListBookings,
   useListDriverProfiles,
   useListTrips,
@@ -133,6 +134,8 @@ export default function DriverScreen() {
   const [carColor, setCarColor] = useState("");
   const [carPlate, setCarPlate] = useState("");
   const [carCapacity, setCarCapacity] = useState("4");
+  const [carBodyType, setCarBodyType] = useState<"Hatchback" | "Sedan" | "SUV" | "MPV">("Hatchback");
+  const [carConditionNote, setCarConditionNote] = useState("");
 
   const wsRef = useRef<WebSocket | null>(null);
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
@@ -188,6 +191,7 @@ export default function DriverScreen() {
 
   const createVehicleMutation = useCreateVehicle();
   const updateVehicleMutation = useUpdateVehicle();
+  const deleteVehicleMutation = useDeleteVehicle();
 
   const stopForegroundTracking = useCallback(() => {
     locationSubRef.current?.remove();
@@ -340,7 +344,10 @@ export default function DriverScreen() {
     return null;
   }
 
-  function openCarEdit(car: { id: number; make: string; model: string; year: number; color: string; licensePlate: string; capacity: number }) {
+  const BODY_TYPE_FARES: Record<string, number> = { Hatchback: 70, Sedan: 100, SUV: 150, MPV: 130 };
+  const BODY_TYPES = ["Hatchback", "Sedan", "SUV", "MPV"] as const;
+
+  function openCarEdit(car: { id: number; make: string; model: string; year: number; color: string; licensePlate: string; capacity: number; bodyType?: string | null; conditionNote?: string | null }) {
     setEditingCarId(car.id);
     setCarMake(car.make);
     setCarModel(car.model);
@@ -348,6 +355,8 @@ export default function DriverScreen() {
     setCarColor(car.color);
     setCarPlate(car.licensePlate === "—" ? "" : car.licensePlate);
     setCarCapacity(String(car.capacity));
+    setCarBodyType((car.bodyType as typeof carBodyType) ?? "Hatchback");
+    setCarConditionNote(car.conditionNote ?? "");
     setShowCarForm(true);
     setShowCarsSection(true);
   }
@@ -355,8 +364,33 @@ export default function DriverScreen() {
   function openCarAdd() {
     setEditingCarId(null);
     setCarMake(""); setCarModel(""); setCarYear(""); setCarColor(""); setCarPlate(""); setCarCapacity("4");
+    setCarBodyType("Hatchback"); setCarConditionNote("");
     setShowCarForm(true);
     setShowCarsSection(true);
+  }
+
+  async function handleDeleteCar(carId: number) {
+    Alert.alert(
+      "Remove this car?",
+      "This won't affect past trips.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteVehicleMutation.mutateAsync({ id: carId });
+              if (selectedVehicleId === carId) setSelectedVehicleId(null);
+              await refetchVehicles();
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch {
+              Alert.alert("Error", "Could not remove the car. Please try again.");
+            }
+          },
+        },
+      ],
+    );
   }
 
   async function handleSaveCar() {
@@ -371,18 +405,20 @@ export default function DriverScreen() {
       if (editingCarId) {
         await updateVehicleMutation.mutateAsync({
           id: editingCarId,
-          data: { make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || "—", capacity },
+          data: { make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || "—", capacity, bodyType: carBodyType, conditionNote: carConditionNote.trim() || undefined },
         });
       } else {
         const created = await createVehicleMutation.mutateAsync({
-          data: { driverProfileId, make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || "—", capacity },
+          data: { driverProfileId, make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || "—", capacity, bodyType: carBodyType, conditionNote: carConditionNote.trim() || undefined },
         });
         setSelectedVehicleId(created.id);
         setFormSeats(String(capacity));
+        setFormFare(String(BODY_TYPE_FARES[carBodyType] ?? 100));
       }
       setShowCarForm(false);
       setEditingCarId(null);
       setCarMake(""); setCarModel(""); setCarYear(""); setCarColor(""); setCarPlate(""); setCarCapacity("4");
+      setCarBodyType("Hatchback"); setCarConditionNote("");
       await refetchVehicles();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
@@ -391,6 +427,14 @@ export default function DriverScreen() {
   }
 
   async function handlePublishTrip() {
+    if (myVehicles.length === 0) {
+      Alert.alert("Add a car first", "You need at least one car before publishing a trip.");
+      return;
+    }
+    if (!selectedVehicleId) {
+      Alert.alert("Select a car", "Please select a car for this trip.");
+      return;
+    }
     if (!formFrom || !formTo) {
       Alert.alert("Required", "Please fill in origin and destination.");
       return;
@@ -596,13 +640,18 @@ export default function DriverScreen() {
                   },
                 ]}
                 onPress={() => {
-                  setSelectedVehicleId(selectedVehicleId === car.id ? null : car.id);
-                  if (selectedVehicleId !== car.id) setFormSeats(String(car.capacity));
+                  const selecting = selectedVehicleId !== car.id;
+                  setSelectedVehicleId(selecting ? car.id : null);
+                  if (selecting) {
+                    setFormSeats(String(car.capacity));
+                    if (car.bodyType) setFormFare(String(BODY_TYPE_FARES[car.bodyType] ?? 100));
+                  }
                 }}
               >
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>
                     {car.make} {car.model}
+                    {car.bodyType ? <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}> · {car.bodyType}</Text> : null}
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontSize: 12, fontFamily: "Inter_400Regular" }}>
                     {car.year} · {car.color} · {car.capacity} seats{car.licensePlate && car.licensePlate !== "—" ? ` · ${car.licensePlate}` : ""}
@@ -611,6 +660,11 @@ export default function DriverScreen() {
                 <Pressable onPress={() => openCarEdit(car)} style={{ padding: 6 }}>
                   <Feather name="edit-2" size={14} color={colors.mutedForeground} />
                 </Pressable>
+                {myVehicles.length > 1 && (
+                  <Pressable onPress={() => handleDeleteCar(car.id)} style={{ padding: 6 }}>
+                    <Feather name="trash-2" size={14} color={colors.destructive} />
+                  </Pressable>
+                )}
               </Pressable>
             ))}
 
@@ -687,6 +741,39 @@ export default function DriverScreen() {
                       maxLength={2}
                     />
                   </View>
+                </View>
+
+                <Text style={{ color: colors.mutedForeground, fontSize: 12, fontFamily: "Inter_500Medium", marginBottom: 4 }}>Body Type</Text>
+                <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+                  {BODY_TYPES.map((bt) => (
+                    <Pressable
+                      key={bt}
+                      onPress={() => setCarBodyType(bt)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                        alignItems: "center",
+                        backgroundColor: carBodyType === bt ? colors.primary : colors.muted,
+                        borderWidth: 1,
+                        borderColor: carBodyType === bt ? colors.primary : colors.border,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontFamily: carBodyType === bt ? "Inter_600SemiBold" : "Inter_400Regular", color: carBodyType === bt ? colors.primaryForeground : colors.foreground }}>
+                        {bt}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <View style={[styles.formInput, { backgroundColor: colors.muted, borderColor: colors.border, marginBottom: 10 }]}>
+                  <TextInput
+                    style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                    placeholder="Condition note (optional)"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={carConditionNote}
+                    onChangeText={setCarConditionNote}
+                  />
                 </View>
 
                 <View style={{ flexDirection: "row", gap: 8 }}>
@@ -840,18 +927,26 @@ export default function DriverScreen() {
               </View>
             </View>
 
+            {myVehicles.length === 0 && (
+              <Text style={{ color: colors.mutedForeground, fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", marginBottom: 6 }}>
+                Add a car in My Cars before publishing a trip.
+              </Text>
+            )}
             <Pressable
               style={({ pressed }) => [
                 styles.publishBtn,
-                { backgroundColor: colors.primary, opacity: pressed || createTripMutation.isPending || createProfileMutation.isPending ? 0.8 : 1 },
+                {
+                  backgroundColor: myVehicles.length === 0 ? colors.muted : colors.primary,
+                  opacity: pressed || createTripMutation.isPending || createProfileMutation.isPending ? 0.8 : 1,
+                },
               ]}
               onPress={handlePublishTrip}
-              disabled={createTripMutation.isPending || createProfileMutation.isPending}
+              disabled={createTripMutation.isPending || createProfileMutation.isPending || myVehicles.length === 0}
             >
               {createTripMutation.isPending || createProfileMutation.isPending ? (
                 <ActivityIndicator color={colors.primaryForeground} />
               ) : (
-                <Text style={[styles.publishBtnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
+                <Text style={[styles.publishBtnText, { color: myVehicles.length === 0 ? colors.mutedForeground : colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
                   Publish Trip
                 </Text>
               )}

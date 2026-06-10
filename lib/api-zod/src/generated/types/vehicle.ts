@@ -15,5 +15,7 @@ export interface Vehicle {
   color: string;
   licensePlate: string;
   capacity: number;
+  bodyType?: string | null;
+  conditionNote?: string | null;
   createdAt: Date;
 }

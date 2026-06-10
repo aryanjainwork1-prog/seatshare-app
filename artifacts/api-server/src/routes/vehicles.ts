@@ -6,6 +6,7 @@ import {
   GetVehicleParams,
   CreateVehicleBody,
   UpdateVehicleBody,
+  DeleteVehicleParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -72,6 +73,23 @@ router.patch("/vehicles/:id", async (req, res): Promise<void> => {
   }
 
   res.json(vehicle);
+});
+
+router.delete("/vehicles/:id", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const params = DeleteVehicleParams.safeParse({ id: Number(raw) });
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [deleted] = await db.delete(vehiclesTable).where(eq(vehiclesTable.id, params.data.id)).returning();
+  if (!deleted) {
+    res.status(404).json({ error: "Vehicle not found" });
+    return;
+  }
+
+  res.status(204).end();
 });
 
 export default router;

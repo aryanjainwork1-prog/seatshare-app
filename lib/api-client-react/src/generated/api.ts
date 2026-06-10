@@ -1799,6 +1799,76 @@ export const useUpdateVehicle = <TError = ErrorType<unknown>,
       return useMutation(getUpdateVehicleMutationOptions(options));
     }
 
+export const getDeleteVehicleUrl = (id: number,) => {
+
+
+
+
+  return `/api/vehicles/${id}`
+}
+
+/**
+ * @summary Delete a vehicle
+ */
+export const deleteVehicle = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteVehicleUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteVehicleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVehicle>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteVehicle>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteVehicle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteVehicle>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteVehicle(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteVehicleMutationResult = NonNullable<Awaited<ReturnType<typeof deleteVehicle>>>
+
+    export type DeleteVehicleMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a vehicle
+ */
+export const useDeleteVehicle = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVehicle>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteVehicle>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteVehicleMutationOptions(options));
+    }
+
 export const getListTripsUrl = (params?: ListTripsParams,) => {
   const normalizedParams = new URLSearchParams();
 

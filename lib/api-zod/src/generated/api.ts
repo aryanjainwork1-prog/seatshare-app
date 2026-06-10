@@ -89,6 +89,8 @@ export const VerifyOtpResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -153,6 +155,8 @@ export const RefreshTokenResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -218,6 +222,8 @@ export const AdminLoginResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -459,6 +465,8 @@ export const CreateDriverProfileResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -510,6 +518,8 @@ export const ListDriverProfilesResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -560,6 +570,8 @@ export const GetDriverProfileResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -613,6 +625,8 @@ export const UpdateDriverProfileResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -663,6 +677,8 @@ export const VerifyDriverProfileResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -688,6 +704,8 @@ export const ListVehiclesResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })),
   "total": zod.number(),
@@ -706,7 +724,9 @@ export const CreateVehicleBody = zod.object({
   "year": zod.number(),
   "color": zod.string(),
   "licensePlate": zod.string(),
-  "capacity": zod.number()
+  "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish()
 })
 
 
@@ -726,6 +746,8 @@ export const GetVehicleResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -743,7 +765,9 @@ export const UpdateVehicleBody = zod.object({
   "year": zod.number().optional(),
   "color": zod.string().optional(),
   "licensePlate": zod.string().optional(),
-  "capacity": zod.number().optional()
+  "capacity": zod.number().optional(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish()
 })
 
 export const UpdateVehicleResponse = zod.object({
@@ -755,7 +779,17 @@ export const UpdateVehicleResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a vehicle
+ */
+export const DeleteVehicleParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
@@ -818,6 +852,8 @@ export const ListTripsResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -904,6 +940,8 @@ export const GetTripResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -972,6 +1010,8 @@ export const UpdateTripResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1039,6 +1079,8 @@ export const CancelTripResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1121,6 +1163,8 @@ export const ListBookingsResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1233,6 +1277,8 @@ export const GetBookingResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1330,6 +1376,8 @@ export const AcceptBookingResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1427,6 +1475,8 @@ export const RejectBookingResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1524,6 +1574,8 @@ export const CompleteBookingResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1621,6 +1673,8 @@ export const CancelBookingResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1923,6 +1977,8 @@ export const GetStatsActivityResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1991,6 +2047,8 @@ export const GetStatsActivityResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -2099,6 +2157,8 @@ export const MatchDriversResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -2138,6 +2198,8 @@ export const MatchDriversResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -2151,6 +2213,8 @@ export const MatchDriversResponse = zod.object({
   "color": zod.string(),
   "licensePlate": zod.string(),
   "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),
   "estimatedFare": zod.number(),

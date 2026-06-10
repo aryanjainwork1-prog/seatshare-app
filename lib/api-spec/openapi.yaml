@@ -480,6 +480,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Vehicle"
+    delete:
+      operationId: deleteVehicle
+      summary: Delete a vehicle
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   /trips:
     get:
@@ -1229,6 +1241,12 @@ components:
           type: string
         capacity:
           type: integer
+        bodyType:
+          type: string
+          nullable: true
+        conditionNote:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -1266,6 +1284,12 @@ components:
           type: string
         capacity:
           type: integer
+        bodyType:
+          type: string
+          nullable: true
+        conditionNote:
+          type: string
+          nullable: true
 
     VehicleUpdate:
       type: object
@@ -1282,6 +1306,12 @@ components:
           type: string
         capacity:
           type: integer
+        bodyType:
+          type: string
+          nullable: true
+        conditionNote:
+          type: string
+          nullable: true
 
     Trip:
       type: object
