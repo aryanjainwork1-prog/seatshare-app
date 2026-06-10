@@ -222,14 +222,20 @@ export default function FindRidesScreen() {
 
   function handleFromSelect(text: string, lat: number, lng: number) {
     setFromText(text);
-    setFromCoords({ lat, lng });
+    const coords = { lat, lng };
+    setFromCoords(coords);
+    AsyncStorage.setItem("seatshare_last_from_coords", JSON.stringify(coords)).catch(() => {});
+    AsyncStorage.setItem("seatshare_last_from_address", text).catch(() => {});
     saveRecent({ displayName: text, lat, lng });
     Haptics.selectionAsync();
   }
 
   function handleToSelect(text: string, lat: number, lng: number) {
     setToText(text);
-    setToCoords({ lat, lng });
+    const coords = { lat, lng };
+    setToCoords(coords);
+    AsyncStorage.setItem("seatshare_last_to_coords", JSON.stringify(coords)).catch(() => {});
+    AsyncStorage.setItem("seatshare_last_to_address", text).catch(() => {});
     saveRecent({ displayName: text, lat, lng });
     Haptics.selectionAsync();
   }
