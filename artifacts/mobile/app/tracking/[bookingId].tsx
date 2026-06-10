@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  AppState,
   Easing,
   Platform,
   Pressable,
@@ -85,10 +86,20 @@ export default function TrackingScreen() {
     return () => pulse.stop();
   }, [pulseAnim]);
 
-  const { data: profile } = useGetDriverProfile(driverProfileId, {
+  const { data: profile, refetch: refetchProfile } = useGetDriverProfile(driverProfileId, {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: { enabled: !!driverProfileId, refetchInterval: 10000 } as any,
   });
+
+  // Immediately refetch when the passenger returns from the background
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        refetchProfile();
+      }
+    });
+    return () => subscription.remove();
+  }, [refetchProfile]);
 
   const isOnline = profile?.isOnline;
   const driverUserId = profile?.userId ?? null;
