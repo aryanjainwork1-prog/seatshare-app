@@ -11,7 +11,7 @@ export interface VehicleUpdate {
   model?: string;
   year?: number;
   color?: string;
-  licensePlate?: string;
+  licensePlate?: string | null;
   capacity?: number;
   bodyType?: string | null;
   conditionNote?: string | null;

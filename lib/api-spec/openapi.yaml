@@ -1268,7 +1268,7 @@ components:
 
     VehicleInput:
       type: object
-      required: [driverProfileId, make, model, year, color, licensePlate, capacity]
+      required: [driverProfileId, make, model, year, color, capacity]
       properties:
         driverProfileId:
           type: integer
@@ -1282,6 +1282,7 @@ components:
           type: string
         licensePlate:
           type: string
+          nullable: true
         capacity:
           type: integer
         bodyType:
@@ -1304,6 +1305,7 @@ components:
           type: string
         licensePlate:
           type: string
+          nullable: true
         capacity:
           type: integer
         bodyType:

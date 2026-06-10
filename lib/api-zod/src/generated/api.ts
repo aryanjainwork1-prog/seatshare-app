@@ -723,7 +723,7 @@ export const CreateVehicleBody = zod.object({
   "model": zod.string(),
   "year": zod.number(),
   "color": zod.string(),
-  "licensePlate": zod.string(),
+  "licensePlate": zod.string().nullish(),
   "capacity": zod.number(),
   "bodyType": zod.string().nullish(),
   "conditionNote": zod.string().nullish()
@@ -764,7 +764,7 @@ export const UpdateVehicleBody = zod.object({
   "model": zod.string().optional(),
   "year": zod.number().optional(),
   "color": zod.string().optional(),
-  "licensePlate": zod.string().optional(),
+  "licensePlate": zod.string().nullish(),
   "capacity": zod.number().optional(),
   "bodyType": zod.string().nullish(),
   "conditionNote": zod.string().nullish()

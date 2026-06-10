@@ -405,11 +405,11 @@ export default function DriverScreen() {
       if (editingCarId) {
         await updateVehicleMutation.mutateAsync({
           id: editingCarId,
-          data: { make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || "—", capacity, bodyType: carBodyType, conditionNote: carConditionNote.trim() || undefined },
+          data: { make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || null, capacity, bodyType: carBodyType, conditionNote: carConditionNote.trim() || null },
         });
       } else {
         const created = await createVehicleMutation.mutateAsync({
-          data: { driverProfileId, make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || "—", capacity, bodyType: carBodyType, conditionNote: carConditionNote.trim() || undefined },
+          data: { driverProfileId, make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || null, capacity, bodyType: carBodyType, conditionNote: carConditionNote.trim() || null },
         });
         setSelectedVehicleId(created.id);
         setFormSeats(String(capacity));
@@ -835,9 +835,12 @@ export default function DriverScreen() {
                     <Pressable
                       key={car.id}
                       onPress={() => {
-                        const next = selectedVehicleId === car.id ? null : car.id;
-                        setSelectedVehicleId(next);
-                        if (next) setFormSeats(String(car.capacity));
+                        const selecting = selectedVehicleId !== car.id;
+                        setSelectedVehicleId(selecting ? car.id : null);
+                        if (selecting) {
+                          setFormSeats(String(car.capacity));
+                          if (car.bodyType) setFormFare(String(BODY_TYPE_FARES[car.bodyType] ?? 100));
+                        }
                       }}
                       style={[
                         styles.carChip,

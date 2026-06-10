@@ -7,7 +7,7 @@ import { vehiclesTable } from "./vehicles";
 export const tripsTable = pgTable("trips", {
   id: serial("id").primaryKey(),
   driverProfileId: integer("driver_profile_id").notNull().references(() => driverProfilesTable.id),
-  vehicleId: integer("vehicle_id").references(() => vehiclesTable.id),
+  vehicleId: integer("vehicle_id").references(() => vehiclesTable.id, { onDelete: "set null" }),
   originAddress: text("origin_address").notNull(),
   destAddress: text("dest_address").notNull(),
   originLat: real("origin_lat").notNull(),

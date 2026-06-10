@@ -10,7 +10,7 @@ export const vehiclesTable = pgTable("vehicles", {
   model: text("model").notNull(),
   year: integer("year").notNull(),
   color: text("color").notNull(),
-  licensePlate: text("license_plate").notNull().unique(),
+  licensePlate: text("license_plate").unique(),
   capacity: integer("capacity").notNull(),
   bodyType: text("body_type"),
   conditionNote: text("condition_note"),

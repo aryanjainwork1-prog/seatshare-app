@@ -143,7 +143,7 @@ export interface VehicleInput {
   model: string;
   year: number;
   color: string;
-  licensePlate: string;
+  licensePlate?: string | null;
   capacity: number;
   bodyType?: string | null;
   conditionNote?: string | null;
@@ -154,7 +154,7 @@ export interface VehicleUpdate {
   model?: string;
   year?: number;
   color?: string;
-  licensePlate?: string;
+  licensePlate?: string | null;
   capacity?: number;
   bodyType?: string | null;
   conditionNote?: string | null;

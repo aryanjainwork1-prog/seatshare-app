@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
-import { db, vehiclesTable } from "@workspace/db";
+import { db, vehiclesTable, driverProfilesTable } from "@workspace/db";
 import {
   ListVehiclesQueryParams,
   GetVehicleParams,
@@ -66,12 +66,21 @@ router.patch("/vehicles/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [vehicle] = await db.update(vehiclesTable).set(parsed.data).where(eq(vehiclesTable.id, id)).returning();
-  if (!vehicle) {
+  const [existing] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, id));
+  if (!existing) {
     res.status(404).json({ error: "Vehicle not found" });
     return;
   }
 
+  if (req.user!.role !== "admin") {
+    const [callerProfile] = await db.select().from(driverProfilesTable).where(eq(driverProfilesTable.userId, req.user!.sub));
+    if (!callerProfile || existing.driverProfileId !== callerProfile.id) {
+      res.status(403).json({ error: "Forbidden: vehicle belongs to a different driver" });
+      return;
+    }
+  }
+
+  const [vehicle] = await db.update(vehiclesTable).set(parsed.data).where(eq(vehiclesTable.id, id)).returning();
   res.json(vehicle);
 });
 
@@ -83,12 +92,21 @@ router.delete("/vehicles/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [deleted] = await db.delete(vehiclesTable).where(eq(vehiclesTable.id, params.data.id)).returning();
-  if (!deleted) {
+  const [existing] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, params.data.id));
+  if (!existing) {
     res.status(404).json({ error: "Vehicle not found" });
     return;
   }
 
+  if (req.user!.role !== "admin") {
+    const [callerProfile] = await db.select().from(driverProfilesTable).where(eq(driverProfilesTable.userId, req.user!.sub));
+    if (!callerProfile || existing.driverProfileId !== callerProfile.id) {
+      res.status(403).json({ error: "Forbidden: vehicle belongs to a different driver" });
+      return;
+    }
+  }
+
+  await db.delete(vehiclesTable).where(eq(vehiclesTable.id, params.data.id));
   res.status(204).end();
 });
 
