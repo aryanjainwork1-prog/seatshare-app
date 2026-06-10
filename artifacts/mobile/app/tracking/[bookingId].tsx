@@ -306,6 +306,16 @@ export default function TrackingScreen() {
               </View>
             </View>
           </View>
+
+          {/* Driver bio — shown below name/status when the driver has set one */}
+          {profile?.user?.bio ? (
+            <>
+              <View style={[styles.bioDivider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.driverBio, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                {profile.user.bio}
+              </Text>
+            </>
+          ) : null}
         </View>
 
         {driverLat != null && driverLng != null && pickupLat && pickupLng ? (
@@ -437,6 +447,8 @@ const styles = StyleSheet.create({
   },
   driverInitials: { fontSize: 18 },
   driverName: { fontSize: 16 },
+  bioDivider: { height: 1, marginHorizontal: 14 },
+  driverBio: { fontSize: 13, lineHeight: 19, paddingHorizontal: 14, paddingBottom: 14 },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 13 },
