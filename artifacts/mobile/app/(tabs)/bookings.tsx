@@ -1,10 +1,10 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useListBookings } from "@workspace/api-client-react";
+import { useListBookings, useCancelBooking } from "@workspace/api-client-react";
 import type { Booking } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -30,11 +30,15 @@ const STATUS_LABELS: Record<string, string> = {
 const ACTIVE_STATUSES = new Set(["pending", "accepted", "in_progress"]);
 const TRACKABLE_STATUSES = new Set(["accepted", "in_progress"]);
 
+const CANCELLABLE_STATUSES = new Set(["pending", "accepted"]);
+
 export default function BookingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const cancelBookingMutation = useCancelBooking();
 
   const { data, isLoading, refetch, isRefetching } = useListBookings(
     { passengerId: user?.id, limit: 50 },
@@ -45,6 +49,30 @@ export default function BookingsScreen() {
   const bookings = data?.data ?? [];
   const active = bookings.filter((b) => ACTIVE_STATUSES.has(b.status));
   const past = bookings.filter((b) => !ACTIVE_STATUSES.has(b.status));
+
+  function handleCancel(booking: Booking) {
+    Alert.alert(
+      "Cancel Booking",
+      "Are you sure you want to cancel this booking?",
+      [
+        { text: "Keep Booking", style: "cancel" },
+        {
+          text: "Cancel Booking",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await cancelBookingMutation.mutateAsync({ id: booking.id, data: {} });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              refetch();
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Could not cancel booking";
+              Alert.alert("Cancellation failed", msg);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   function handleTrack(booking: Booking) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -192,6 +220,22 @@ export default function BookingsScreen() {
             <Feather name="navigation" size={15} color={colors.primary} />
             <Text style={[styles.trackBtnText, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
               Track Driver
+            </Text>
+          </Pressable>
+        )}
+
+        {CANCELLABLE_STATUSES.has(booking.status) && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.cancelBtn,
+              { borderColor: colors.destructive, opacity: pressed || cancelBookingMutation.isPending ? 0.7 : 1 },
+            ]}
+            onPress={() => handleCancel(booking)}
+            disabled={cancelBookingMutation.isPending}
+          >
+            <Feather name="x-circle" size={15} color={colors.destructive} />
+            <Text style={[styles.cancelBtnText, { color: colors.destructive, fontFamily: "Inter_600SemiBold" }]}>
+              Cancel Booking
             </Text>
           </Pressable>
         )}
@@ -379,6 +423,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   trackBtnText: { fontSize: 14 },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingVertical: 10,
+  },
+  cancelBtnText: { fontSize: 14 },
   dateText: { fontSize: 12 },
   emptyState: {
     paddingTop: 80,

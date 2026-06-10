@@ -8,6 +8,7 @@ import {
   AcceptBookingBody,
   RejectBookingBody,
   CompleteBookingBody,
+  CancelBookingBody,
 } from "@workspace/api-zod";
 import { randomBytes } from "crypto";
 import { sendPushNotification } from "../lib/push";
@@ -305,6 +306,70 @@ router.patch("/bookings/:id/complete", async (req, res): Promise<void> => {
   }
 
   res.json(await enrichBooking(booking));
+});
+
+router.patch("/bookings/:id/cancel", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = Number(raw);
+
+  const parsed = CancelBookingBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(bookingsTable)
+    .where(eq(bookingsTable.id, id));
+
+  if (!existing) {
+    res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+
+  const requestingUserId = req.user?.sub;
+  const requestingRole = req.user?.role;
+
+  if (requestingRole !== "admin" && existing.passengerId !== requestingUserId) {
+    res.status(403).json({ error: "Forbidden: only the passenger can cancel their booking" });
+    return;
+  }
+
+  if (!["pending", "accepted"].includes(existing.status)) {
+    res.status(400).json({ error: `Cannot cancel a booking with status '${existing.status}'` });
+    return;
+  }
+
+  const [booking] = await db.update(bookingsTable)
+    .set({ status: "cancelled", rejectionReason: parsed.data.reason ?? null })
+    .where(eq(bookingsTable.id, id))
+    .returning();
+
+  if (!booking) {
+    res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+
+  const enriched = await enrichBooking(booking);
+  res.json(enriched);
+
+  const [trip] = await db
+    .select({ driverProfileId: tripsTable.driverProfileId, originAddress: tripsTable.originAddress, destAddress: tripsTable.destAddress })
+    .from(tripsTable)
+    .where(eq(tripsTable.id, booking.tripId));
+
+  if (trip) {
+    const driverToken = await getDriverPushToken(trip.driverProfileId);
+    if (driverToken) {
+      sendPushNotification({
+        to: driverToken,
+        title: "Booking Cancelled",
+        body: `A passenger has cancelled their booking for your trip: ${trip.originAddress} → ${trip.destAddress}`,
+        data: { screen: "driver", bookingId: id },
+      }).catch(() => {});
+    }
+  }
 });
 
 export default router;

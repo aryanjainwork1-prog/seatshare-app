@@ -1269,6 +1269,94 @@ export const CompleteBookingResponse = zod.object({
 
 
 /**
+ * @summary Passenger cancels a booking
+ */
+export const CancelBookingParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CancelBookingBody = zod.object({
+  "reason": zod.string().optional()
+})
+
+export const CancelBookingResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "passengerId": zod.number(),
+  "pickupAddress": zod.string(),
+  "dropoffAddress": zod.string(),
+  "pickupLat": zod.number(),
+  "pickupLng": zod.number(),
+  "dropoffLat": zod.number(),
+  "dropoffLng": zod.number(),
+  "status": zod.string(),
+  "fare": zod.number(),
+  "boardingCode": zod.string().nullish(),
+  "rejectionReason": zod.string().nullish(),
+  "trip": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "originAddress": zod.string(),
+  "destAddress": zod.string(),
+  "originLat": zod.number(),
+  "originLng": zod.number(),
+  "destLat": zod.number(),
+  "destLng": zod.number(),
+  "availableSeats": zod.number(),
+  "maxDeviationKm": zod.number(),
+  "status": zod.string(),
+  "farePerSeat": zod.number(),
+  "departureTime": zod.coerce.date(),
+  "driverProfile": zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "licenseNumber": zod.string().nullish(),
+  "rating": zod.number(),
+  "totalTrips": zod.number(),
+  "isVerified": zod.boolean(),
+  "isOnline": zod.boolean(),
+  "currentLat": zod.number().nullish(),
+  "currentLng": zod.number().nullish(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+}).optional(),
+  "vehicle": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "make": zod.string(),
+  "model": zod.string(),
+  "year": zod.number(),
+  "color": zod.string(),
+  "licensePlate": zod.string(),
+  "capacity": zod.number(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "passenger": zod.union([zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List payments
  */
 export const ListPaymentsQueryParams = zod.object({

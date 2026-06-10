@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useCreateBooking, useGetBooking, useGetTrip } from "@workspace/api-client-react";
+import { useCreateBooking, useCancelBooking, useGetBooking, useGetTrip } from "@workspace/api-client-react";
 import type { Booking } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -48,6 +48,7 @@ export default function TripDetailScreen() {
   );
 
   const createBookingMutation = useCreateBooking();
+  const cancelBookingMutation = useCancelBooking();
 
   // Determine the active booking (either just-created or fetched existing)
   const activeBooking = newBooking ?? existingBooking ?? null;
@@ -63,6 +64,31 @@ export default function TripDetailScreen() {
   });
 
   const isLoading = tripLoading || (!!parsedBookingId && bookingLoading);
+
+  async function handleCancelBooking() {
+    if (!activeBooking) return;
+    Alert.alert(
+      "Cancel Ride",
+      "Are you sure you want to cancel this booking?",
+      [
+        { text: "Keep Ride", style: "cancel" },
+        {
+          text: "Cancel Ride",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await cancelBookingMutation.mutateAsync({ id: activeBooking.id, data: {} });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              router.replace("/(tabs)/bookings");
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Could not cancel booking";
+              Alert.alert("Cancellation failed", msg);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   async function handleBook() {
     if (!trip || !user?.id) return;
@@ -291,6 +317,23 @@ export default function TripDetailScreen() {
               </View>
             </View>
           </View>
+
+          {/* Cancel ride button — only for accepted (not in-progress) */}
+          {activeBooking.status === "accepted" && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.cancelBtn,
+                { borderColor: colors.destructive, opacity: pressed || cancelBookingMutation.isPending ? 0.7 : 1 },
+              ]}
+              onPress={handleCancelBooking}
+              disabled={cancelBookingMutation.isPending}
+            >
+              <Feather name="x-circle" size={16} color={colors.destructive} />
+              <Text style={[styles.cancelBtnText, { color: colors.destructive, fontFamily: "Inter_600SemiBold" }]}>
+                Cancel Ride
+              </Text>
+            </Pressable>
+          )}
         </ScrollView>
       </View>
     );
@@ -585,6 +628,17 @@ const styles = StyleSheet.create({
   },
   bookingInfoRow: { fontSize: 14 },
   bookingInfoVal: { fontSize: 14 },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  cancelBtnText: { fontSize: 14 },
   viewBookingsBtn: {
     width: "100%",
     height: 52,
