@@ -1,5 +1,5 @@
-import { lt, eq, and, isNotNull } from "drizzle-orm";
-import { db, driverProfilesTable, adminLogsTable } from "@workspace/db";
+import { lt, eq, and, isNotNull, inArray } from "drizzle-orm";
+import { db, driverProfilesTable, adminLogsTable, usersTable } from "@workspace/db";
 import { logger } from "./logger";
 
 const DEFAULT_STALE_THRESHOLD_MINUTES = 15;
@@ -26,7 +26,11 @@ export async function sweepStaleDrivers(): Promise<void> {
           lt(driverProfilesTable.locationUpdatedAt, cutoff),
         ),
       )
-      .returning({ id: driverProfilesTable.id, locationUpdatedAt: driverProfilesTable.locationUpdatedAt });
+      .returning({
+        id: driverProfilesTable.id,
+        userId: driverProfilesTable.userId,
+        locationUpdatedAt: driverProfilesTable.locationUpdatedAt,
+      });
 
     if (result.length > 0) {
       logger.info(
@@ -34,16 +38,28 @@ export async function sweepStaleDrivers(): Promise<void> {
         "Marked stale drivers offline",
       );
 
+      // Fetch driver names so log entries are human-readable
+      const userIds = result.map((r) => r.userId);
+      const users = await db
+        .select({ id: usersTable.id, name: usersTable.name })
+        .from(usersTable)
+        .where(inArray(usersTable.id, userIds));
+      const nameById = new Map(users.map((u) => [u.id, u.name ?? null]));
+
       // Write one admin-log entry per affected driver so admins can audit
-      const logEntries = result.map((row) => ({
-        adminId: null as number | null,
-        action: "auto_offline" as const,
-        entityType: "driver_profile",
-        entityId: row.id,
-        details: row.locationUpdatedAt
-          ? `Location last seen: ${row.locationUpdatedAt.toISOString()} (threshold: ${thresholdMinutes} min)`
-          : `No location recorded (threshold: ${thresholdMinutes} min)`,
-      }));
+      const logEntries = result.map((row) => {
+        const driverName = nameById.get(row.userId) ?? `Driver #${row.id}`;
+        const lastSeen = row.locationUpdatedAt
+          ? row.locationUpdatedAt.toISOString()
+          : "unknown";
+        return {
+          adminId: null as number | null,
+          action: "auto_offline" as const,
+          entityType: "driver_profile",
+          entityId: row.id,
+          details: `${driverName} — last location: ${lastSeen} (threshold: ${thresholdMinutes} min)`,
+        };
+      });
 
       await db.insert(adminLogsTable).values(logEntries);
     }

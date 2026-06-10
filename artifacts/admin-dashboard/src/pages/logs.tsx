@@ -20,8 +20,9 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 
+const ALL_SENTINEL = "all";
 const ACTION_OPTIONS = [
-  { value: "", label: "All actions" },
+  { value: ALL_SENTINEL, label: "All actions" },
   { value: "auto_offline", label: "Auto-offline" },
 ];
 
@@ -45,12 +46,13 @@ function ActionBadge({ action }: { action: string }) {
 
 export default function Logs() {
   const [page, setPage] = useState(1);
-  const [actionFilter, setActionFilter] = useState("");
+  const [actionFilter, setActionFilter] = useState<string>(ALL_SENTINEL);
 
+  const isFiltered = actionFilter !== ALL_SENTINEL;
   const queryParams = {
     page,
     limit: 20,
-    ...(actionFilter ? { action: actionFilter } : {}),
+    ...(isFiltered ? { action: actionFilter } : {}),
   };
 
   const { data, isLoading } = useListAdminLogs(queryParams, {
@@ -76,14 +78,14 @@ export default function Logs() {
           </SelectTrigger>
           <SelectContent>
             {ACTION_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value || "__all__"} value={opt.value}>
+              <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {actionFilter && (
-          <Button variant="ghost" size="sm" onClick={() => handleActionChange("")}>
+        {isFiltered && (
+          <Button variant="ghost" size="sm" onClick={() => handleActionChange(ALL_SENTINEL)}>
             Clear filter
           </Button>
         )}
