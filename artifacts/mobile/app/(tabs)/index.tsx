@@ -173,11 +173,13 @@ export default function FindRidesScreen() {
   function handleFromTextChange(t: string) {
     setFromText(t);
     setFromCoords(null);
+    AsyncStorage.removeItem("seatshare_last_from_coords").catch(() => {});
   }
 
   function handleToTextChange(t: string) {
     setToText(t);
     setToCoords(null);
+    AsyncStorage.removeItem("seatshare_last_to_coords").catch(() => {});
   }
 
   function handleFromSelect(text: string, lat: number, lng: number) {
