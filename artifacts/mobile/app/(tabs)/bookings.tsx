@@ -480,13 +480,22 @@ export default function BookingsScreen() {
           </View>
         ) : bookings.length === 0 ? (
           <View style={styles.emptyState}>
-            <Feather name="calendar" size={40} color={colors.mutedForeground} />
+            <Feather name="calendar" size={44} color={colors.mutedForeground} />
             <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
               No bookings yet
             </Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              Book a ride to get started
+              Find a shared ride and book your first seat
             </Text>
+            <Pressable
+              style={[styles.emptyAction, { backgroundColor: colors.primary }]}
+              onPress={() => router.push("/")}
+            >
+              <Feather name="search" size={14} color={colors.primaryForeground} />
+              <Text style={[styles.emptyActionText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
+                Find a Ride
+              </Text>
+            </Pressable>
           </View>
         ) : (
           <>
@@ -830,7 +839,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyTitle: { fontSize: 18, marginTop: 8 },
-  emptyText: { fontSize: 14, textAlign: "center" },
+  emptyText: { fontSize: 14, textAlign: "center", maxWidth: 260 },
+  emptyAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  emptyActionText: { fontSize: 15 },
   cancelWarningBanner: {
     flexDirection: "row",
     alignItems: "center",

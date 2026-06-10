@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -35,6 +35,10 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [emailInput, setEmailInput] = useState(user?.email ?? "");
+  const [ageInput, setAgeInput] = useState(user?.age ? String(user.age) : "");
+  const [genderInput, setGenderInput] = useState(user?.gender ?? "");
+  const [workplaceInput, setWorkplaceInput] = useState(user?.workplace ?? "");
+  const [officeInput, setOfficeInput] = useState(user?.officeLocation ?? "");
 
   function handleVersionTap() {
     tapCountRef.current += 1;
@@ -60,7 +64,11 @@ export default function ProfileScreen() {
   useEffect(() => {
     setNameInput(user?.name ?? "");
     setEmailInput(user?.email ?? "");
-  }, [user?.name, user?.email]);
+    setAgeInput(user?.age ? String(user.age) : "");
+    setGenderInput(user?.gender ?? "");
+    setWorkplaceInput(user?.workplace ?? "");
+    setOfficeInput(user?.officeLocation ?? "");
+  }, [user?.name, user?.email, user?.age, user?.gender, user?.workplace, user?.officeLocation]);
 
   const initials = (user?.name ?? user?.phone ?? "U")
     .split(" ")
@@ -72,8 +80,16 @@ export default function ProfileScreen() {
   async function handleSave() {
     if (!user?.id) return;
     try {
+      const ageNum = ageInput.trim() ? parseInt(ageInput.trim(), 10) : undefined;
       const updated = await updateMeMutation.mutateAsync({
-        data: { name: nameInput || undefined, email: emailInput || undefined },
+        data: {
+          name: nameInput || undefined,
+          email: emailInput || undefined,
+          age: ageNum && !isNaN(ageNum) ? ageNum : undefined,
+          gender: genderInput || undefined,
+          workplace: workplaceInput || undefined,
+          officeLocation: officeInput || undefined,
+        },
       });
       await updateUser(updated);
       setEditing(false);
@@ -255,6 +271,62 @@ export default function ProfileScreen() {
             />
           </View>
 
+          <View style={[styles.inputRow, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+            <Feather name="briefcase" size={16} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.inputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+              placeholder="Workplace / Company"
+              placeholderTextColor={colors.mutedForeground}
+              value={workplaceInput}
+              onChangeText={setWorkplaceInput}
+            />
+          </View>
+
+          <View style={[styles.inputRow, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+            <Feather name="map-pin" size={16} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.inputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+              placeholder="Office location"
+              placeholderTextColor={colors.mutedForeground}
+              value={officeInput}
+              onChangeText={setOfficeInput}
+            />
+          </View>
+
+          <View style={styles.editRow}>
+            <View style={[styles.inputRow, styles.inputHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+              <Feather name="user" size={16} color={colors.mutedForeground} />
+              <TextInput
+                style={[styles.inputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                placeholder="Age"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="number-pad"
+                value={ageInput}
+                onChangeText={setAgeInput}
+                maxLength={3}
+              />
+            </View>
+            <View style={[styles.genderRow, styles.inputHalf]}>
+              {(["M", "F", "—"] as const).map((g) => (
+                <Pressable
+                  key={g}
+                  onPress={() => setGenderInput(g === "—" ? "" : g)}
+                  style={[
+                    styles.genderBtn,
+                    {
+                      backgroundColor: genderInput === (g === "—" ? "" : g) ? colors.primary : colors.muted,
+                      borderColor: genderInput === (g === "—" ? "" : g) ? colors.primary : colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: genderInput === (g === "—" ? "" : g) ? colors.primaryForeground : colors.foreground, fontSize: 13, fontFamily: "Inter_500Medium" }}>
+                    {g}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
           <View style={styles.editActions}>
             <Pressable
               style={[styles.cancelBtn, { borderColor: colors.border }]}
@@ -262,6 +334,10 @@ export default function ProfileScreen() {
                 setEditing(false);
                 setNameInput(user?.name ?? "");
                 setEmailInput(user?.email ?? "");
+                setAgeInput(user?.age ? String(user.age) : "");
+                setGenderInput(user?.gender ?? "");
+                setWorkplaceInput(user?.workplace ?? "");
+                setOfficeInput(user?.officeLocation ?? "");
               }}
             >
               <Text style={[styles.cancelBtnText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
@@ -299,16 +375,30 @@ export default function ProfileScreen() {
             <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Email</Text>
             <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{user?.email ?? "—"}</Text>
           </View>
-          <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
-          <View style={styles.infoRow}>
-            <Ionicons name="shield-checkmark" size={15} color={colors.mutedForeground} />
-            <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Role</Text>
-            <View style={[styles.roleBadge, { backgroundColor: `${colors.primary}22` }]}>
-              <Text style={[styles.roleBadgeText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
-                {user?.role ?? "passenger"}
-              </Text>
-            </View>
-          </View>
+          {(user?.workplace || user?.officeLocation) && (
+            <>
+              <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <Feather name="briefcase" size={15} color={colors.mutedForeground} />
+                <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Work</Text>
+                <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {[user?.workplace, user?.officeLocation].filter(Boolean).join(" · ")}
+                </Text>
+              </View>
+            </>
+          )}
+          {(user?.age || user?.gender) && (
+            <>
+              <View style={[styles.infoSep, { backgroundColor: colors.border }]} />
+              <View style={styles.infoRow}>
+                <Feather name="user" size={15} color={colors.mutedForeground} />
+                <Text style={[styles.infoLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>About</Text>
+                <Text style={[styles.infoValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {[user?.age ? `${user.age} yrs` : null, user?.gender === "M" ? "Male" : user?.gender === "F" ? "Female" : null].filter(Boolean).join(" · ") || "—"}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
       )}
 
@@ -424,6 +514,23 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   inputText: { flex: 1, fontSize: 15 },
+  editRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  inputHalf: { flex: 1 },
+  genderRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  genderBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   editActions: {
     flexDirection: "row",
     gap: 10,

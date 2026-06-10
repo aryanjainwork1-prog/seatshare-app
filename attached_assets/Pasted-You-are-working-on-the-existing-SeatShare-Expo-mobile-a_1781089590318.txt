@@ -1,0 +1,93 @@
+You are working on the existing SeatShare Expo mobile app.
+
+We have already implemented role persistence, Mumbai locations, Demo Mode, and LocationInput extraction. Now we need to fix bugs and implement several important features with a strong focus on **live/dynamic carpooling**.
+
+### Important Clarifications About the App Vision
+
+This is a **live carpooling** app, not a preset/static one. Drivers should be able to:
+- Accept or decline new ride requests **while already driving** with passengers.
+- See how a new request affects their current route in real time.
+- Understand the updated full path with new pickups and drop-offs.
+
+### Phase 1: Bug Fixes (Highest Priority)
+
+**Bug 1: Driver cannot publish a trip**
+- Even after filling Origin and Destination, the Publish Trip button does not work.
+- Investigate and fix the issue in `app/(tabs)/driver.tsx` (form validation, state, button logic, or API call).
+
+**Bug 2: "Go Online" toggle is not working**
+- Fix the online/offline toggle in Driver mode so drivers can properly go online and receive ride requests.
+
+### Phase 2: UI & Profile Improvements
+
+**Empty States**
+- Replace all current empty states (box with X) in Find, Bookings, Drive, and Profile screens with clean, professional empty states using proper icons/illustrations and helpful text.
+
+**Profile Screen**
+- Add an **"Add Email"** option.
+- **Completely remove** the Role badge from the Profile screen.
+- Add new fields for better matching and trust:
+  - Age
+  - Gender (important for shared ride matching)
+  - Workplace / Company
+  - Office / Workspace location
+
+**Note:** KYC and Workspace ID verification will be added later. Keep the Profile structure flexible.
+
+### Phase 3: Driver Car Management
+
+- Allow drivers to add and manage up to **3 cars**.
+- For each car, collect: Model name, Type (Sedan/SUV/Hatchback etc.), Number of seats, and optional condition notes.
+- When publishing a trip, show a **dropdown** to select which car the driver will use for that trip.
+- Based on the selected car, suggest appropriate price per seat and available seats.
+- This will serve as the foundation for a future car tier system.
+
+### Phase 4: Passenger Find Rides Screen Improvements
+
+- On the **Find Rides** screen (`app/(tabs)/index.tsx`), show a **live map** with nearby available drivers (similar to Uber).
+- Display driver locations on the map along with estimated time to reach the passenger’s pickup point.
+- After a driver accepts the booking:
+  - Show the driver’s live location and estimated arrival time.
+  - Show wait time (if any) and calculate extra charges for waiting based on the selected car.
+- **Remove** the current "Passenger / Driver" mode indicator from the top of the Find Rides screen.
+
+### Phase 5: Driver Experience Improvements (Focus on Live Carpooling)
+
+**Important:** Do **NOT** remove or heavily modify the existing **"Find"** section in the Driver tab (`app/(tabs)/driver.tsx`). Keep it as it is.
+
+**Key Requirements for Live Carpooling:**
+
+While a driver is already on a trip (with one or more passengers), they should still be able to receive and accept new ride requests in real time.
+
+When a new ride request comes in, clearly show the driver:
+- How much **extra deviation** (in km) they need to take from their current route to accommodate the new passenger.
+- How much **additional time** this deviation will add to the total journey for all current passengers.
+- The **updated full route** (using Google Maps with waypoints/stops) showing all pickups and drop-offs in the most optimized order.
+
+The driver should be able to clearly understand the impact on time and route **before** accepting or rejecting the new request. The system should support live/dynamic route updates while the driver is already moving.
+
+### Implementation Instructions
+
+1. **First**, analyze `app/(tabs)/driver.tsx` and identify why the Publish Trip and Go Online features are broken.
+2. Provide a **clear implementation plan** before writing any code. The plan should cover:
+   - Root cause of both bugs
+   - How Driver Car Management + car selection will work
+   - How the live nearby drivers map on the passenger side will be built
+   - How deviation calculation + added time + updated Google Maps route will be shown to drivers during live ride requests
+   - Which files will be modified
+
+3. After I approve the plan, implement in this order:
+   - Fix Publish Trip bug
+   - Fix Go Online toggle
+   - Improve all empty states
+   - Update Profile screen (Add Email + Remove Role + new fields)
+   - Implement Driver Car Management + car selection when publishing trips
+   - Add live driver map on Passenger Find screen
+   - Improve Driver experience with deviation info and Google Maps route updates for live ride acceptance
+
+**Strict Rules:**
+- Do **not** break existing live tracking, WebSocket, animated markers, or background location.
+- Use Google Maps with waypoints for showing multiple stops and updated routes.
+- Focus on making live/dynamic ride acceptance smooth for drivers who are already on the road.
+
+Start by analyzing the driver publishing and online toggle issues, then share the implementation plan.

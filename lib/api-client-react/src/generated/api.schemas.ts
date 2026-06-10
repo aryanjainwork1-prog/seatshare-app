@@ -40,31 +40,15 @@ export interface User {
   avatarUrl?: string | null;
   role: string;
   status: string;
+  /** @nullable */
+  age?: number | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  workplace?: string | null;
+  /** @nullable */
+  officeLocation?: string | null;
   createdAt: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
-
-export interface UserList {
-  data: User[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-export interface UserUpdate {
-  name?: string;
-  email?: string;
-  avatarUrl?: string;
-}
-
-export interface SuspendInput {
-  suspend: boolean;
-  reason?: string;
 }
 
 export interface Vehicle {
@@ -95,6 +79,35 @@ export interface DriverProfile {
   user?: User;
   vehicle?: Vehicle | null;
   createdAt: string;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+  driverProfile?: DriverProfile | null;
+}
+
+export interface UserList {
+  data: User[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface UserUpdate {
+  name?: string;
+  email?: string;
+  avatarUrl?: string;
+  age?: number;
+  gender?: string;
+  workplace?: string;
+  officeLocation?: string;
+}
+
+export interface SuspendInput {
+  suspend: boolean;
+  reason?: string;
 }
 
 export interface DriverProfileList {
@@ -433,6 +446,7 @@ limit?: number;
 };
 
 export type ListVehiclesParams = {
+driverProfileId?: number;
 page?: number;
 limit?: number;
 };

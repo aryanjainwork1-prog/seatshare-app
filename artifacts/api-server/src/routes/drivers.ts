@@ -11,6 +11,26 @@ import {
 
 const router: IRouter = Router();
 
+router.post("/driver-profiles", async (req, res): Promise<void> => {
+  const caller = req.user!;
+  if (caller.role !== "driver") {
+    res.status(403).json({ error: "Only drivers can create a driver profile" });
+    return;
+  }
+
+  const [existing] = await db.select().from(driverProfilesTable).where(eq(driverProfilesTable.userId, caller.sub));
+  if (existing) {
+    res.json(await enrichProfile(existing));
+    return;
+  }
+
+  const [profile] = await db
+    .insert(driverProfilesTable)
+    .values({ userId: caller.sub, rating: 5.0, totalTrips: 0, isVerified: false, isOnline: false })
+    .returning();
+  res.status(201).json(await enrichProfile(profile));
+});
+
 async function enrichProfile(profile: typeof driverProfilesTable.$inferSelect) {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, profile.userId));
   const [vehicle] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.driverProfileId, profile.id));

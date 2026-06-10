@@ -14,7 +14,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGetDriverProfile } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useDriverLocation } from "@/hooks/useDriverLocation";
+import { LiveDriverMap } from "@/components/LiveDriverMap";
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -31,6 +34,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 export default function TrackingScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { accessToken } = useAuth();
   const params = useLocalSearchParams<{
     bookingId: string;
     driverProfileId: string;
@@ -69,24 +73,25 @@ export default function TrackingScreen() {
     return () => pulse.stop();
   }, [pulseAnim]);
 
-  const { data: profile, dataUpdatedAt } = useGetDriverProfile(driverProfileId, {
+  const { data: profile } = useGetDriverProfile(driverProfileId, {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    query: { enabled: !!driverProfileId, refetchInterval: 5000 } as any,
+    query: { enabled: !!driverProfileId, refetchInterval: 10000 } as any,
   });
 
-  const driverLat = profile?.currentLat;
-  const driverLng = profile?.currentLng;
   const isOnline = profile?.isOnline;
+  const driverUserId = profile?.userId ?? null;
 
-  const secondsAgo =
-    dataUpdatedAt > 0 ? Math.round((Date.now() - dataUpdatedAt) / 1000) : null;
+  // WebSocket real-time location (native only); falls back to REST polling
+  const { location: wsLocation, isConnected } = useDriverLocation({
+    driverUserId,
+    accessToken,
+    enabled: !!driverUserId && Platform.OS !== "web",
+  });
 
-  const distanceKm =
-    driverLat != null && driverLng != null && pickupLat && pickupLng
-      ? haversineKm(driverLat, driverLng, pickupLat, pickupLng)
-      : null;
-
-  const etaMin = distanceKm != null ? Math.round((distanceKm / 30) * 60) : null;
+  // Use WS location if available, otherwise fall back to profile's last known coords
+  const driverLat = wsLocation?.lat ?? profile?.currentLat ?? null;
+  const driverLng = wsLocation?.lng ?? profile?.currentLng ?? null;
+  const locationUpdatedAt = wsLocation?.updatedAt ?? null;
 
   const initials = driverName
     .split(" ")
@@ -140,14 +145,14 @@ export default function TrackingScreen() {
             >
               LIVE
             </Text>
-            {secondsAgo !== null && (
+            {isConnected && (
               <Text
                 style={[
                   styles.updatedText,
                   { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
                 ]}
               >
-                Updated {secondsAgo}s ago
+                Real-time
               </Text>
             )}
           </View>
@@ -201,134 +206,15 @@ export default function TrackingScreen() {
           </View>
         </View>
 
-        {driverLat != null && driverLng != null ? (
-          <View
-            style={[
-              styles.locationCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <Text
-              style={[
-                styles.locationTitle,
-                { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
-              ]}
-            >
-              Driver's Location
-            </Text>
-
-            <View style={styles.coordsRow}>
-              <View style={[styles.coordBox, { backgroundColor: colors.muted }]}>
-                <Text
-                  style={[
-                    styles.coordLabel,
-                    { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
-                  ]}
-                >
-                  Latitude
-                </Text>
-                <Text
-                  style={[
-                    styles.coordValue,
-                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  {driverLat.toFixed(5)}°
-                </Text>
-              </View>
-              <View style={[styles.coordBox, { backgroundColor: colors.muted }]}>
-                <Text
-                  style={[
-                    styles.coordLabel,
-                    { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
-                  ]}
-                >
-                  Longitude
-                </Text>
-                <Text
-                  style={[
-                    styles.coordValue,
-                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  {driverLng.toFixed(5)}°
-                </Text>
-              </View>
-            </View>
-
-            {distanceKm != null && (
-              <View style={styles.etaRow}>
-                <View
-                  style={[
-                    styles.etaBox,
-                    {
-                      backgroundColor: `${colors.primary}15`,
-                      borderColor: `${colors.primary}33`,
-                    },
-                  ]}
-                >
-                  <Feather name="navigation" size={18} color={colors.primary} />
-                  <View>
-                    <Text
-                      style={[
-                        styles.etaValue,
-                        { color: colors.primary, fontFamily: "Inter_700Bold" },
-                      ]}
-                    >
-                      {distanceKm < 1
-                        ? `${Math.round(distanceKm * 1000)} m`
-                        : `${distanceKm.toFixed(1)} km`}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.etaLabel,
-                        {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_400Regular",
-                        },
-                      ]}
-                    >
-                      from your pickup
-                    </Text>
-                  </View>
-                </View>
-                {etaMin != null && (
-                  <View
-                    style={[
-                      styles.etaBox,
-                      {
-                        backgroundColor: `${colors.success}15`,
-                        borderColor: `${colors.success}33`,
-                      },
-                    ]}
-                  >
-                    <Feather name="clock" size={18} color={colors.success} />
-                    <View>
-                      <Text
-                        style={[
-                          styles.etaValue,
-                          { color: colors.success, fontFamily: "Inter_700Bold" },
-                        ]}
-                      >
-                        ~{etaMin} min
-                      </Text>
-                      <Text
-                        style={[
-                          styles.etaLabel,
-                          {
-                            color: colors.mutedForeground,
-                            fontFamily: "Inter_400Regular",
-                          },
-                        ]}
-                      >
-                        estimated arrival
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
+        {driverLat != null && driverLng != null && pickupLat && pickupLng ? (
+          <LiveDriverMap
+            driverLat={driverLat}
+            driverLng={driverLng}
+            pickupLat={pickupLat}
+            pickupLng={pickupLng}
+            isConnected={isConnected}
+            updatedAt={locationUpdatedAt}
+          />
         ) : (
           <View
             style={[

@@ -17,5 +17,13 @@ export interface User {
   avatarUrl?: string | null;
   role: string;
   status: string;
+  /** @nullable */
+  age?: number | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  workplace?: string | null;
+  /** @nullable */
+  officeLocation?: string | null;
   createdAt: Date;
 }

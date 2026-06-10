@@ -288,6 +288,22 @@ paths:
                 $ref: "#/components/schemas/User"
 
   /driver-profiles:
+    post:
+      operationId: createDriverProfile
+      summary: Create driver profile for the authenticated driver
+      responses:
+        "200":
+          description: Existing profile returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfile"
+        "201":
+          description: Profile created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfile"
     get:
       operationId: listDriverProfiles
       summary: List driver profiles
@@ -389,6 +405,10 @@ paths:
       operationId: listVehicles
       summary: List all vehicles
       parameters:
+        - in: query
+          name: driverProfileId
+          schema:
+            type: integer
         - in: query
           name: page
           schema:
@@ -1046,6 +1066,10 @@ components:
           type: string
         user:
           $ref: "#/components/schemas/User"
+        driverProfile:
+          oneOf:
+            - $ref: "#/components/schemas/DriverProfile"
+            - type: "null"
 
     User:
       type: object
@@ -1065,6 +1089,14 @@ components:
           type: string
         status:
           type: string
+        age:
+          type: ["integer", "null"]
+        gender:
+          type: ["string", "null"]
+        workplace:
+          type: ["string", "null"]
+        officeLocation:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -1092,6 +1124,14 @@ components:
         email:
           type: string
         avatarUrl:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+        workplace:
+          type: string
+        officeLocation:
           type: string
 
     SuspendInput:

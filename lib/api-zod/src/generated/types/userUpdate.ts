@@ -10,4 +10,8 @@ export interface UserUpdate {
   name?: string;
   email?: string;
   avatarUrl?: string;
+  age?: number;
+  gender?: string;
+  workplace?: string;
+  officeLocation?: string;
 }

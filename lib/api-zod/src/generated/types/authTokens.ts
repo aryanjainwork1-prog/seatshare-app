@@ -5,10 +5,12 @@
  * SeatShare ride-sharing platform API
  * OpenAPI spec version: 1.0.0
  */
+import type { DriverProfile } from './driverProfile';
 import type { User } from './user';
 
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   user: User;
+  driverProfile?: DriverProfile | null;
 }

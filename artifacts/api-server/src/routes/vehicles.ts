@@ -17,11 +17,12 @@ router.get("/vehicles", async (req, res): Promise<void> => {
     return;
   }
 
-  const { page = 1, limit = 20 } = parsed.data;
+  const { page = 1, limit = 20, driverProfileId } = parsed.data;
   const offset = (page - 1) * limit;
 
-  const [{ total }] = await db.select({ total: count() }).from(vehiclesTable);
-  const data = await db.select().from(vehiclesTable).limit(limit).offset(offset).orderBy(vehiclesTable.createdAt);
+  const where = driverProfileId ? eq(vehiclesTable.driverProfileId, driverProfileId) : undefined;
+  const [{ total }] = await db.select({ total: count() }).from(vehiclesTable).where(where);
+  const data = await db.select().from(vehiclesTable).where(where).limit(limit).offset(offset).orderBy(vehiclesTable.createdAt);
 
   res.json({ data, total, page, limit });
 });

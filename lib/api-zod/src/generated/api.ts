@@ -50,8 +50,49 @@ export const VerifyOtpResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
-})
+}),
+  "driverProfile": zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "licenseNumber": zod.string().nullish(),
+  "rating": zod.number(),
+  "totalTrips": zod.number(),
+  "isVerified": zod.boolean(),
+  "isOnline": zod.boolean(),
+  "currentLat": zod.number().nullish(),
+  "currentLng": zod.number().nullish(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}).optional(),
+  "vehicle": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "make": zod.string(),
+  "model": zod.string(),
+  "year": zod.number(),
+  "color": zod.string(),
+  "licensePlate": zod.string(),
+  "capacity": zod.number(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
 })
 
 
@@ -73,8 +114,49 @@ export const RefreshTokenResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
-})
+}),
+  "driverProfile": zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "licenseNumber": zod.string().nullish(),
+  "rating": zod.number(),
+  "totalTrips": zod.number(),
+  "isVerified": zod.boolean(),
+  "isOnline": zod.boolean(),
+  "currentLat": zod.number().nullish(),
+  "currentLng": zod.number().nullish(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}).optional(),
+  "vehicle": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "make": zod.string(),
+  "model": zod.string(),
+  "year": zod.number(),
+  "color": zod.string(),
+  "licensePlate": zod.string(),
+  "capacity": zod.number(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
 })
 
 
@@ -97,8 +179,49 @@ export const AdminLoginResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
-})
+}),
+  "driverProfile": zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "licenseNumber": zod.string().nullish(),
+  "rating": zod.number(),
+  "totalTrips": zod.number(),
+  "isVerified": zod.boolean(),
+  "isOnline": zod.boolean(),
+  "currentLat": zod.number().nullish(),
+  "currentLng": zod.number().nullish(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}).optional(),
+  "vehicle": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "make": zod.string(),
+  "model": zod.string(),
+  "year": zod.number(),
+  "color": zod.string(),
+  "licensePlate": zod.string(),
+  "capacity": zod.number(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
 })
 
 
@@ -135,6 +258,10 @@ export const GetMeResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -145,7 +272,11 @@ export const GetMeResponse = zod.object({
 export const UpdateMeBody = zod.object({
   "name": zod.string().optional(),
   "email": zod.string().optional(),
-  "avatarUrl": zod.string().optional()
+  "avatarUrl": zod.string().optional(),
+  "age": zod.number().optional(),
+  "gender": zod.string().optional(),
+  "workplace": zod.string().optional(),
+  "officeLocation": zod.string().optional()
 })
 
 export const UpdateMeResponse = zod.object({
@@ -156,6 +287,10 @@ export const UpdateMeResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -192,6 +327,10 @@ export const ListUsersResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })),
   "total": zod.number(),
@@ -215,6 +354,10 @@ export const GetUserResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -229,7 +372,11 @@ export const UpdateUserParams = zod.object({
 export const UpdateUserBody = zod.object({
   "name": zod.string().optional(),
   "email": zod.string().optional(),
-  "avatarUrl": zod.string().optional()
+  "avatarUrl": zod.string().optional(),
+  "age": zod.number().optional(),
+  "gender": zod.string().optional(),
+  "workplace": zod.string().optional(),
+  "officeLocation": zod.string().optional()
 })
 
 export const UpdateUserResponse = zod.object({
@@ -240,6 +387,10 @@ export const UpdateUserResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -264,6 +415,52 @@ export const SuspendUserResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Create driver profile for the authenticated driver
+ */
+export const CreateDriverProfileResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "licenseNumber": zod.string().nullish(),
+  "rating": zod.number(),
+  "totalTrips": zod.number(),
+  "isVerified": zod.boolean(),
+  "isOnline": zod.boolean(),
+  "currentLat": zod.number().nullish(),
+  "currentLng": zod.number().nullish(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}).optional(),
+  "vehicle": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "make": zod.string(),
+  "model": zod.string(),
+  "year": zod.number(),
+  "color": zod.string(),
+  "licensePlate": zod.string(),
+  "capacity": zod.number(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
 })
 
@@ -298,6 +495,10 @@ export const ListDriverProfilesResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -344,6 +545,10 @@ export const GetDriverProfileResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -393,6 +598,10 @@ export const UpdateDriverProfileResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -439,6 +648,10 @@ export const VerifyDriverProfileResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -460,6 +673,7 @@ export const VerifyDriverProfileResponse = zod.object({
  * @summary List all vehicles
  */
 export const ListVehiclesQueryParams = zod.object({
+  "driverProfileId": zod.coerce.number().optional(),
   "page": zod.coerce.number().optional(),
   "limit": zod.coerce.number().optional()
 })
@@ -588,6 +802,10 @@ export const ListTripsResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -668,6 +886,10 @@ export const GetTripResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -731,6 +953,10 @@ export const UpdateTripResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -793,6 +1019,10 @@ export const CancelTripResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -870,6 +1100,10 @@ export const ListBookingsResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -895,6 +1129,10 @@ export const ListBookingsResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -973,6 +1211,10 @@ export const GetBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -998,6 +1240,10 @@ export const GetBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1061,6 +1307,10 @@ export const AcceptBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -1086,6 +1336,10 @@ export const AcceptBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1149,6 +1403,10 @@ export const RejectBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -1174,6 +1432,10 @@ export const RejectBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1237,6 +1499,10 @@ export const CompleteBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -1262,6 +1528,10 @@ export const CompleteBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1325,6 +1595,10 @@ export const CancelBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -1350,6 +1624,10 @@ export const CancelBookingResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1473,6 +1751,10 @@ export const ListSupportTicketsResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1515,6 +1797,10 @@ export const GetSupportTicketResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1548,6 +1834,10 @@ export const UpdateSupportTicketResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1606,6 +1896,10 @@ export const GetStatsActivityResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -1669,6 +1963,10 @@ export const GetStatsActivityResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -1694,6 +1992,10 @@ export const GetStatsActivityResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "createdAt": zod.coerce.date()
@@ -1706,6 +2008,10 @@ export const GetStatsActivityResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })),
   "tripsByDay": zod.array(zod.object({
@@ -1764,6 +2070,10 @@ export const MatchDriversResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({
@@ -1799,6 +2109,10 @@ export const MatchDriversResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "role": zod.string(),
   "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }).optional(),
   "vehicle": zod.union([zod.object({

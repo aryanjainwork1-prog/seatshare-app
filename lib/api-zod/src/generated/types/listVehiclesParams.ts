@@ -7,6 +7,7 @@
  */
 
 export type ListVehiclesParams = {
+driverProfileId?: number;
 page?: number;
 limit?: number;
 };

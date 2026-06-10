@@ -63,7 +63,21 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   const refreshToken = generateRefreshToken();
   await db.update(usersTable).set({ refreshToken }).where(eq(usersTable.id, user.id));
 
-  res.json({ accessToken, refreshToken, user: sanitizeUser(user) });
+  let driverProfile: typeof driverProfilesTable.$inferSelect | null = null;
+  if (user.role === "driver") {
+    const [existing] = await db.select().from(driverProfilesTable).where(eq(driverProfilesTable.userId, user.id));
+    if (existing) {
+      driverProfile = existing;
+    } else {
+      const [created] = await db
+        .insert(driverProfilesTable)
+        .values({ userId: user.id, rating: 5.0, totalTrips: 0, isVerified: false, isOnline: false })
+        .returning();
+      driverProfile = created;
+    }
+  }
+
+  res.json({ accessToken, refreshToken, user: sanitizeUser(user), driverProfile });
 });
 
 // ─── Token Refresh ───────────────────────────────────────────────────────────

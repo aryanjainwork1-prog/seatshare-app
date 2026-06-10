@@ -27,20 +27,32 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   useAcceptBooking,
+  useCreateDriverProfile,
   useCreateTrip,
+  useCreateVehicle,
   useListBookings,
   useListDriverProfiles,
   useListTrips,
+  useListVehicles,
   useRejectBooking,
   useUpdateDriverProfile,
+  useUpdateVehicle,
 } from "@workspace/api-client-react";
 import type { Booking } from "@workspace/api-client-react";
+import { haversineKm } from "@/hooks/useDriverLocation";
 import { useAuth } from "@/context/AuthContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 import { MUMBAI_AREAS } from "@/constants/locations";
 import { DriverSelfMap } from "@/components/DriverSelfMap";
+
+const DEPARTURE_OPTIONS = [
+  { label: "Now", offsetMs: 0 },
+  { label: "In 30 min", offsetMs: 30 * 60 * 1000 },
+  { label: "In 1 hr", offsetMs: 60 * 60 * 1000 },
+  { label: "In 2 hrs", offsetMs: 2 * 60 * 60 * 1000 },
+];
 
 function LocationInput({
   value,
@@ -109,7 +121,18 @@ export default function DriverScreen() {
   const [formTo, setFormTo] = useState("");
   const [formSeats, setFormSeats] = useState("3");
   const [formFare, setFormFare] = useState("150");
-  const [formDeparture, setFormDeparture] = useState("");
+  const [formDepartureOffset, setFormDepartureOffset] = useState(1);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+
+  const [showCarsSection, setShowCarsSection] = useState(false);
+  const [showCarForm, setShowCarForm] = useState(false);
+  const [editingCarId, setEditingCarId] = useState<number | null>(null);
+  const [carMake, setCarMake] = useState("");
+  const [carModel, setCarModel] = useState("");
+  const [carYear, setCarYear] = useState("");
+  const [carColor, setCarColor] = useState("");
+  const [carPlate, setCarPlate] = useState("");
+  const [carCapacity, setCarCapacity] = useState("4");
 
   const wsRef = useRef<WebSocket | null>(null);
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
@@ -135,6 +158,7 @@ export default function DriverScreen() {
   }, [driverProfile?.isOnline]);
 
   const updateProfileMutation = useUpdateDriverProfile();
+  const createProfileMutation = useCreateDriverProfile();
   const createTripMutation = useCreateTrip();
   const acceptBookingMutation = useAcceptBooking();
   const rejectBookingMutation = useRejectBooking();
@@ -154,6 +178,16 @@ export default function DriverScreen() {
   const pendingBookings = (bookingsData?.data ?? []).filter((b) =>
     myTripIds.includes(b.tripId),
   );
+
+  const { data: vehiclesData, refetch: refetchVehicles } = useListVehicles(
+    { driverProfileId, limit: 10 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { query: { enabled: !!driverProfileId } as any },
+  );
+  const myVehicles = vehiclesData?.data ?? [];
+
+  const createVehicleMutation = useCreateVehicle();
+  const updateVehicleMutation = useUpdateVehicle();
 
   const stopForegroundTracking = useCallback(() => {
     locationSubRef.current?.remove();
@@ -259,20 +293,33 @@ export default function DriverScreen() {
     return () => subscription.remove();
   }, [displayIsOnline, driverProfileId, startForegroundTracking, stopForegroundTracking]);
 
+  async function ensureDriverProfile(): Promise<number | null> {
+    if (driverProfileId) return driverProfileId;
+    try {
+      const profile = await createProfileMutation.mutateAsync();
+      await refetchProfile();
+      return profile.id;
+    } catch {
+      Alert.alert("Setup Error", "Could not create your driver profile. Please try again.");
+      return null;
+    }
+  }
+
   async function toggleOnline() {
-    if (!driverProfileId) return;
+    const profileId = await ensureDriverProfile();
+    if (!profileId) return;
     const newVal = !displayIsOnline;
     setLocalIsOnline(newVal);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const updated = await updateProfileMutation.mutateAsync({
-        id: driverProfileId,
+        id: profileId,
         data: { isOnline: newVal },
       });
       setLocalIsOnline((updated as { isOnline?: boolean }).isOnline ?? newVal);
       refetchProfile();
       if (newVal) {
-        await startLocationTracking(driverProfileId);
+        await startLocationTracking(profileId);
       } else {
         await stopAllTracking();
       }
@@ -293,14 +340,67 @@ export default function DriverScreen() {
     return null;
   }
 
+  function openCarEdit(car: { id: number; make: string; model: string; year: number; color: string; licensePlate: string; capacity: number }) {
+    setEditingCarId(car.id);
+    setCarMake(car.make);
+    setCarModel(car.model);
+    setCarYear(String(car.year));
+    setCarColor(car.color);
+    setCarPlate(car.licensePlate === "—" ? "" : car.licensePlate);
+    setCarCapacity(String(car.capacity));
+    setShowCarForm(true);
+    setShowCarsSection(true);
+  }
+
+  function openCarAdd() {
+    setEditingCarId(null);
+    setCarMake(""); setCarModel(""); setCarYear(""); setCarColor(""); setCarPlate(""); setCarCapacity("4");
+    setShowCarForm(true);
+    setShowCarsSection(true);
+  }
+
+  async function handleSaveCar() {
+    if (!driverProfileId) return;
+    const year = parseInt(carYear.trim(), 10);
+    const capacity = parseInt(carCapacity.trim(), 10);
+    if (!carMake.trim() || !carModel.trim() || isNaN(year) || !carColor.trim() || isNaN(capacity) || capacity < 1) {
+      Alert.alert("Missing fields", "Please fill in make, model, year, color, and seats.");
+      return;
+    }
+    try {
+      if (editingCarId) {
+        await updateVehicleMutation.mutateAsync({
+          id: editingCarId,
+          data: { make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || "—", capacity },
+        });
+      } else {
+        const created = await createVehicleMutation.mutateAsync({
+          data: { driverProfileId, make: carMake.trim(), model: carModel.trim(), year, color: carColor.trim(), licensePlate: carPlate.trim() || "—", capacity },
+        });
+        setSelectedVehicleId(created.id);
+        setFormSeats(String(capacity));
+      }
+      setShowCarForm(false);
+      setEditingCarId(null);
+      setCarMake(""); setCarModel(""); setCarYear(""); setCarColor(""); setCarPlate(""); setCarCapacity("4");
+      await refetchVehicles();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not save vehicle. Please try again.");
+    }
+  }
+
   async function handlePublishTrip() {
-    if (!driverProfileId || !formFrom || !formTo) {
+    if (!formFrom || !formTo) {
       Alert.alert("Required", "Please fill in origin and destination.");
       return;
     }
+    const profileId = await ensureDriverProfile();
+    if (!profileId) return;
     const seats = parseInt(formSeats, 10) || 1;
     const fare = parseFloat(formFare) || 100;
-    const departure = formDeparture || new Date(Date.now() + 3600000).toISOString();
+    const departureOffsetMs = DEPARTURE_OPTIONS[formDepartureOffset]?.offsetMs ?? 3600000;
+    const departure = new Date(Date.now() + departureOffsetMs).toISOString();
 
     const [fromCoords, toCoords] = await Promise.all([
       geocodeAddress(formFrom),
@@ -315,7 +415,7 @@ export default function DriverScreen() {
     try {
       await createTripMutation.mutateAsync({
         data: {
-          driverProfileId,
+          driverProfileId: profileId,
           originAddress: formFrom,
           destAddress: formTo,
           originLat,
@@ -425,7 +525,7 @@ export default function DriverScreen() {
           onValueChange={toggleOnline}
           trackColor={{ false: colors.border, true: `${colors.success}99` }}
           thumbColor={displayIsOnline ? colors.success : colors.mutedForeground}
-          disabled={updateProfileMutation.isPending}
+          disabled={updateProfileMutation.isPending || createProfileMutation.isPending}
         />
       </View>
 
@@ -448,6 +548,173 @@ export default function DriverScreen() {
         </View>
       )}
 
+      {/* My Cars section */}
+      <View style={styles.section}>
+        <Pressable style={styles.sectionHeader} onPress={() => setShowCarsSection(!showCarsSection)}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Feather name="truck" size={15} color={colors.mutedForeground} />
+            <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              My Cars{myVehicles.length > 0 ? ` (${myVehicles.length})` : ""}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            {myVehicles.length < 3 && (
+              <Pressable
+                style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                onPress={(e) => { e.stopPropagation?.(); openCarAdd(); }}
+              >
+                <Feather name="plus" size={16} color={colors.primaryForeground} />
+              </Pressable>
+            )}
+            <Feather name={showCarsSection ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
+          </View>
+        </Pressable>
+
+        {showCarsSection && (
+          <>
+            {myVehicles.length === 0 && !showCarForm && (
+              <Pressable
+                style={[styles.carEmptyRow, { borderColor: colors.border, backgroundColor: colors.muted }]}
+                onPress={openCarAdd}
+              >
+                <Feather name="plus-circle" size={18} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 14, fontFamily: "Inter_500Medium" }}>
+                  Add your first car
+                </Text>
+              </Pressable>
+            )}
+
+            {myVehicles.map((car) => (
+              <Pressable
+                key={car.id}
+                style={[
+                  styles.carRow,
+                  {
+                    backgroundColor: selectedVehicleId === car.id ? `${colors.primary}18` : colors.card,
+                    borderColor: selectedVehicleId === car.id ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  setSelectedVehicleId(selectedVehicleId === car.id ? null : car.id);
+                  if (selectedVehicleId !== car.id) setFormSeats(String(car.capacity));
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>
+                    {car.make} {car.model}
+                  </Text>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 12, fontFamily: "Inter_400Regular" }}>
+                    {car.year} · {car.color} · {car.capacity} seats{car.licensePlate && car.licensePlate !== "—" ? ` · ${car.licensePlate}` : ""}
+                  </Text>
+                </View>
+                <Pressable onPress={() => openCarEdit(car)} style={{ padding: 6 }}>
+                  <Feather name="edit-2" size={14} color={colors.mutedForeground} />
+                </Pressable>
+              </Pressable>
+            ))}
+
+            {showCarForm && (
+              <View style={[styles.carFormCard, { backgroundColor: colors.card, borderColor: colors.primary }]}>
+                <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 4 }}>
+                  {editingCarId ? "Edit Car" : "Add Car"}
+                </Text>
+
+                <View style={styles.carFormRow}>
+                  <View style={[styles.formInput, styles.carFormHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <TextInput
+                      style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                      placeholder="Make (e.g. Maruti)"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={carMake}
+                      onChangeText={setCarMake}
+                    />
+                  </View>
+                  <View style={[styles.formInput, styles.carFormHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <TextInput
+                      style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                      placeholder="Model (e.g. Swift)"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={carModel}
+                      onChangeText={setCarModel}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.carFormRow}>
+                  <View style={[styles.formInput, styles.carFormHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <TextInput
+                      style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                      placeholder="Year"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="number-pad"
+                      value={carYear}
+                      onChangeText={setCarYear}
+                      maxLength={4}
+                    />
+                  </View>
+                  <View style={[styles.formInput, styles.carFormHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <TextInput
+                      style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                      placeholder="Color"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={carColor}
+                      onChangeText={setCarColor}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.carFormRow}>
+                  <View style={[styles.formInput, styles.carFormHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <TextInput
+                      style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                      placeholder="Plate (optional)"
+                      placeholderTextColor={colors.mutedForeground}
+                      autoCapitalize="characters"
+                      value={carPlate}
+                      onChangeText={setCarPlate}
+                    />
+                  </View>
+                  <View style={[styles.formInput, styles.carFormHalf, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <Feather name="users" size={14} color={colors.mutedForeground} />
+                    <TextInput
+                      style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                      placeholder="Seats"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="number-pad"
+                      value={carCapacity}
+                      onChangeText={setCarCapacity}
+                      maxLength={2}
+                    />
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <Pressable
+                    style={[styles.publishBtn, { flex: 1, backgroundColor: colors.muted, borderWidth: 1, borderColor: colors.border }]}
+                    onPress={() => { setShowCarForm(false); setEditingCarId(null); }}
+                  >
+                    <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_500Medium" }}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.publishBtn, { flex: 2, backgroundColor: colors.primary, opacity: pressed || createVehicleMutation.isPending || updateVehicleMutation.isPending ? 0.8 : 1 }]}
+                    onPress={handleSaveCar}
+                    disabled={createVehicleMutation.isPending || updateVehicleMutation.isPending}
+                  >
+                    {createVehicleMutation.isPending || updateVehicleMutation.isPending ? (
+                      <ActivityIndicator color={colors.primaryForeground} />
+                    ) : (
+                      <Text style={{ color: colors.primaryForeground, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>
+                        {editingCarId ? "Save Changes" : "Add Car"}
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
@@ -466,6 +733,40 @@ export default function DriverScreen() {
             <Text style={[styles.formTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
               Publish a Trip
             </Text>
+
+            {myVehicles.length > 0 && (
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Feather name="truck" size={13} color={colors.mutedForeground} />
+                  <Text style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: "Inter_400Regular" }}>
+                    Vehicle
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  {myVehicles.map((car) => (
+                    <Pressable
+                      key={car.id}
+                      onPress={() => {
+                        const next = selectedVehicleId === car.id ? null : car.id;
+                        setSelectedVehicleId(next);
+                        if (next) setFormSeats(String(car.capacity));
+                      }}
+                      style={[
+                        styles.carChip,
+                        {
+                          backgroundColor: selectedVehicleId === car.id ? colors.primary : colors.muted,
+                          borderColor: selectedVehicleId === car.id ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={{ color: selectedVehicleId === car.id ? colors.primaryForeground : colors.foreground, fontSize: 12, fontFamily: "Inter_500Medium" }}>
+                        {car.make} {car.model} · {car.capacity}s
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
 
             <LocationInput
               value={formFrom}
@@ -510,26 +811,43 @@ export default function DriverScreen() {
               </View>
             </View>
 
-            <View style={[styles.formInput, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Feather name="clock" size={14} color={colors.mutedForeground} />
-              <TextInput
-                style={[styles.formInputText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-                placeholder="Departure (ISO date or leave blank)"
-                placeholderTextColor={colors.mutedForeground}
-                value={formDeparture}
-                onChangeText={setFormDeparture}
-              />
+            <View style={{ gap: 6 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Feather name="clock" size={13} color={colors.mutedForeground} />
+                <Text style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: "Inter_400Regular" }}>
+                  Departure
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {DEPARTURE_OPTIONS.map((opt, i) => (
+                  <Pressable
+                    key={opt.label}
+                    onPress={() => setFormDepartureOffset(i)}
+                    style={[
+                      styles.depOption,
+                      {
+                        backgroundColor: formDepartureOffset === i ? colors.primary : colors.muted,
+                        borderColor: formDepartureOffset === i ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: formDepartureOffset === i ? colors.primaryForeground : colors.foreground, fontSize: 12, fontFamily: "Inter_500Medium" }}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
 
             <Pressable
               style={({ pressed }) => [
                 styles.publishBtn,
-                { backgroundColor: colors.primary, opacity: pressed || createTripMutation.isPending ? 0.8 : 1 },
+                { backgroundColor: colors.primary, opacity: pressed || createTripMutation.isPending || createProfileMutation.isPending ? 0.8 : 1 },
               ]}
               onPress={handlePublishTrip}
-              disabled={createTripMutation.isPending}
+              disabled={createTripMutation.isPending || createProfileMutation.isPending}
             >
-              {createTripMutation.isPending ? (
+              {createTripMutation.isPending || createProfileMutation.isPending ? (
                 <ActivityIndicator color={colors.primaryForeground} />
               ) : (
                 <Text style={[styles.publishBtnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -542,10 +860,22 @@ export default function DriverScreen() {
 
         {(tripsData?.data ?? []).length === 0 && !showPublishForm && (
           <View style={styles.emptyState}>
-            <Feather name="map" size={32} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              No trips yet. Tap + to publish a route.
+            <Feather name="navigation" size={44} color={colors.mutedForeground} />
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              No trips posted
             </Text>
+            <Text style={[styles.emptySubtext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              Tap the + button to publish your first route and start accepting passengers
+            </Text>
+            <Pressable
+              style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
+              onPress={() => setShowPublishForm(true)}
+            >
+              <Feather name="plus" size={14} color={colors.primaryForeground} />
+              <Text style={[styles.emptyBtnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
+                Post a Trip
+              </Text>
+            </Pressable>
           </View>
         )}
 
@@ -567,12 +897,53 @@ export default function DriverScreen() {
         ))}
       </View>
 
-      {pendingBookings.length > 0 && (
+      {(tripsData?.data ?? []).length > 0 && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            Booking Requests ({pendingBookings.length})
+            Booking Requests{pendingBookings.length > 0 ? ` (${pendingBookings.length})` : ""}
           </Text>
-          {pendingBookings.map((booking: Booking) => (
+          {pendingBookings.length === 0 && (
+            <View style={[styles.emptyState, { paddingVertical: 16 }]}>
+              <Feather name="check-circle" size={32} color={colors.mutedForeground} />
+              <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold", fontSize: 15 }]}>
+                All clear
+              </Text>
+              <Text style={[styles.emptySubtext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                No pending requests — you're up to date
+              </Text>
+            </View>
+          )}
+          {pendingBookings.map((booking: Booking) => {
+            const trip = booking.trip as { originLat?: number | null; originLng?: number | null; destLat?: number | null; destLng?: number | null } | undefined;
+            const pickupLat = booking.pickupLat;
+            const pickupLng = booking.pickupLng;
+            const oLat = trip?.originLat;
+            const oLng = trip?.originLng;
+            const dLat = trip?.destLat;
+            const dLng = trip?.destLng;
+
+            // Compute perpendicular deviation of pickup from trip route segment
+            let deviationKm: number | null = null;
+            if (pickupLat != null && pickupLng != null && oLat != null && oLng != null && dLat != null && dLng != null) {
+              const cosLat = Math.cos(((oLat + dLat) / 2) * Math.PI / 180);
+              const ax = oLng * cosLat * 111, ay = oLat * 111;
+              const bx = dLng * cosLat * 111, by = dLat * 111;
+              const px = pickupLng * cosLat * 111, py = pickupLat * 111;
+              const dx = bx - ax, dy = by - ay;
+              const len2 = dx * dx + dy * dy;
+              if (len2 > 0.001) {
+                let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+                t = Math.max(0, Math.min(1, t));
+                const cx = ax + t * dx, cy = ay + t * dy;
+                deviationKm = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+              } else {
+                deviationKm = haversineKm(pickupLat, pickupLng, oLat, oLng);
+              }
+            }
+            const hasDeviation = deviationKm != null && deviationKm > 1.5;
+            const deviationColor = deviationKm != null && deviationKm > 4 ? colors.destructive : "#d97706";
+
+            return (
             <View
               key={booking.id}
               style={[styles.bookingCard, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -584,6 +955,14 @@ export default function DriverScreen() {
                 <Text style={[styles.bookingRoute, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]} numberOfLines={1}>
                   {booking.pickupAddress} → {booking.dropoffAddress}
                 </Text>
+                {hasDeviation && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                    <Feather name="alert-triangle" size={11} color={deviationColor} />
+                    <Text style={{ color: deviationColor, fontSize: 11, fontFamily: "Inter_500Medium" }}>
+                      Pickup {deviationKm!.toFixed(1)} km off your route
+                    </Text>
+                  </View>
+                )}
                 <Text style={[styles.bookingFare, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
                   ₹{booking.fare.toFixed(0)}
                 </Text>
@@ -605,7 +984,8 @@ export default function DriverScreen() {
                 </Pressable>
               </View>
             </View>
-          ))}
+            );
+          })}
         </View>
       )}
     </ScrollView>
@@ -762,8 +1142,21 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: "center",
     gap: 8,
-    paddingVertical: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 16,
   },
+  emptyTitle: { fontSize: 18, marginTop: 4 },
+  emptySubtext: { fontSize: 13, textAlign: "center", maxWidth: 260, lineHeight: 20 },
+  emptyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  emptyBtnText: { fontSize: 14 },
   emptyText: { fontSize: 13, textAlign: "center" },
   promptTitle: { fontSize: 20 },
   promptText: { fontSize: 14 },
@@ -787,4 +1180,46 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   switchBtnText: { fontSize: 15 },
+  depOption: {
+    flex: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  carEmptyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+  },
+  carRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  carFormCard: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 14,
+    gap: 10,
+  },
+  carFormRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  carFormHalf: { flex: 1 },
+  carChip: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
 });

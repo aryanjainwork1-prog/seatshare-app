@@ -1120,6 +1120,76 @@ export const useSuspendUser = <TError = ErrorType<unknown>,
       return useMutation(getSuspendUserMutationOptions(options));
     }
 
+export const getCreateDriverProfileUrl = () => {
+
+
+
+
+  return `/api/driver-profiles`
+}
+
+/**
+ * @summary Create driver profile for the authenticated driver
+ */
+export const createDriverProfile = async ( options?: RequestInit): Promise<DriverProfile> => {
+
+  return customFetch<DriverProfile>(getCreateDriverProfileUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreateDriverProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDriverProfile>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDriverProfile>>, TError,void, TContext> => {
+
+const mutationKey = ['createDriverProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDriverProfile>>, void> = () => {
+
+
+          return  createDriverProfile(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDriverProfileMutationResult = NonNullable<Awaited<ReturnType<typeof createDriverProfile>>>
+
+    export type CreateDriverProfileMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create driver profile for the authenticated driver
+ */
+export const useCreateDriverProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDriverProfile>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDriverProfile>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateDriverProfileMutationOptions(options));
+    }
+
 export const getListDriverProfilesUrl = (params?: ListDriverProfilesParams,) => {
   const normalizedParams = new URLSearchParams();
 
