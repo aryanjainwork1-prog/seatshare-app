@@ -1,0 +1,204 @@
+You are an expert frontend architect and UX engineer specializing in high-quality ride-booking mobile experiences (Uber/Lyft/Rapido style) and beautiful React prototypes. Your task is to build a COMPLETE, polished, production-feeling interactive web prototype of "SeatShare" — a modern Mumbai-first ride booking app that supports both passengers and drivers with role-based UIs.
+The prototype must feel like a real professional mobile app (not a generic dashboard). It must be fully functional end-to-end in the browser using only frontend tech. All flows work, data persists across refreshes, and demo mode allows complete testing of passenger → booking → driver accept → live trip → complete without any backend.
+MANDATORY TECH STACK (use exactly this — best for Replit speed + quality):
+
+Vite + React 18 + TypeScript (strict)
+Tailwind CSS (latest) + beautiful custom design system (rounded-3xl cards, generous spacing, premium shadows, emerald/navy palette)
+Zustand + persist middleware (single source of truth for everything)
+react-leaflet + leaflet (for interactive maps — OSM tiles, free, perfect)
+lucide-react (icons)
+framer-motion (smooth animations, transitions, marker movements)
+sonner (elegant toasts)
+date-fns (time formatting)
+No other heavy libs. Keep bundle light and fast.
+
+After npm create vite@latest . -- --template react-ts, install:
+Bashnpm install zustand leaflet react-leaflet lucide-react framer-motion sonner date-fns
+npm install -D @types/leaflet
+Import leaflet CSS in main.tsx or index.css.
+Design System (strictly follow for premium feel):
+
+Primary: #0F172A (deep navy/slate-900)
+Accent/Success: #059669 (emerald-600) and #10B981
+Warning: #F59E0B
+Danger: #EF4444
+Background: slate-50 / white
+Cards: white, shadow-xl shadow-slate-200/70, rounded-3xl, generous internal padding
+Tap targets: minimum 48px, clear hover/active states
+Typography: Clean hierarchy, large readable text on mobile
+Never feel like a "testing app" in main UI — only demo panel is obviously for testing
+
+Project Structure (create exactly):
+textsrc/
+├── components/
+│   ├── MapView.tsx              # Reusable interactive map with all modes
+│   ├── LocationSearch.tsx       # Autocomplete input + suggestions
+│   ├── BookingCard.tsx          # Professional ride option / booking summary
+│   ├── StatusTimeline.tsx       # Vertical trip status steps
+│   ├── DemoControls.tsx         # Floating testing panel (only when demoMode)
+│   ├── RoleCard.tsx
+│   └── ...
+├── lib/
+│   ├── mumbai-locations.ts
+│   ├── utils.ts
+│   └── demoSimulator.ts
+├── store/
+│   └── useAppStore.ts
+├── types.ts
+├── App.tsx
+├── main.tsx
+└── index.css
+Copy this EXACT code into src/lib/mumbai-locations.ts:
+TypeScriptexport interface Location {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  category: 'area' | 'station' | 'mall' | 'landmark' | 'residential' | 'commercial' | 'airport';
+  popular?: boolean;
+}
+
+export const mumbaiLocations: Location[] = [
+  { id: 'loc_sanpada_station', name: 'Sanpada Station', address: 'Sanpada, Navi Mumbai, Maharashtra 400705', lat: 19.0334, lng: 73.0295, category: 'station', popular: true },
+  { id: 'loc_bhumiraj', name: 'Bhumi Raj Residency', address: 'Sanpada East, Navi Mumbai, Maharashtra 400705', lat: 19.0362, lng: 73.0321, category: 'residential', popular: true },
+  { id: 'loc_vashi_station', name: 'Vashi Station', address: 'Vashi, Navi Mumbai, Maharashtra 400703', lat: 19.0773, lng: 72.9977, category: 'station', popular: true },
+  { id: 'loc_inorbit', name: 'Inorbit Mall', address: 'Vashi, Navi Mumbai, Maharashtra 400703', lat: 19.0755, lng: 72.9973, category: 'mall', popular: true },
+  { id: 'loc_apmc', name: 'APMC Market', address: 'Vashi, Navi Mumbai, Maharashtra 400703', lat: 19.0805, lng: 72.9998, category: 'commercial' },
+  { id: 'loc_nerul_station', name: 'Nerul Station', address: 'Nerul, Navi Mumbai, Maharashtra 400706', lat: 19.0338, lng: 73.0183, category: 'station' },
+  { id: 'loc_seawoods', name: 'Seawoods Grand Central Mall', address: 'Nerul, Navi Mumbai, Maharashtra 400706', lat: 19.0215, lng: 73.0178, category: 'mall' },
+  { id: 'loc_belapur', name: 'CBD Belapur Station', address: 'CBD Belapur, Navi Mumbai, Maharashtra 400614', lat: 19.0186, lng: 73.0380, category: 'station', popular: true },
+  { id: 'loc_kharghar', name: 'Kharghar Station', address: 'Kharghar, Navi Mumbai, Maharashtra 410210', lat: 19.0258, lng: 73.0593, category: 'station' },
+  { id: 'loc_panvel', name: 'Panvel Station', address: 'Panvel, Navi Mumbai, Maharashtra 410206', lat: 18.9894, lng: 73.1106, category: 'station' },
+  { id: 'loc_kamothe', name: 'Kamothe Station', address: 'Kamothe, Navi Mumbai, Maharashtra 410209', lat: 19.0167, lng: 73.0903, category: 'station' },
+  { id: 'loc_kalamboli', name: 'Kalamboli Station', address: 'Kalamboli, Navi Mumbai, Maharashtra 410218', lat: 19.0278, lng: 73.1092, category: 'station' },
+  { id: 'loc_juinagar', name: 'Juinagar Station', address: 'Juinagar, Navi Mumbai, Maharashtra 400705', lat: 19.0425, lng: 73.0156, category: 'station' },
+  { id: 'loc_turbhe', name: 'Turbhe Station', address: 'Turbhe, Navi Mumbai, Maharashtra 400705', lat: 19.0725, lng: 73.0189, category: 'station' },
+  { id: 'loc_ulwe', name: 'Ulwe Node', address: 'Ulwe, Navi Mumbai, Maharashtra 410206', lat: 18.9789, lng: 73.0294, category: 'area' },
+  { id: 'loc_airport', name: 'Chhatrapati Shivaji Maharaj International Airport (BOM)', address: 'Mumbai, Maharashtra 400099', lat: 19.0896, lng: 72.8656, category: 'airport', popular: true },
+  { id: 'loc_domestic', name: 'Domestic Airport Terminal 1', address: 'Andheri East, Mumbai, Maharashtra 400099', lat: 19.0975, lng: 72.8746, category: 'airport' },
+  { id: 'loc_cst', name: 'CST / Chhatrapati Shivaji Maharaj Terminus', address: 'Mumbai, Maharashtra 400001', lat: 18.9398, lng: 72.8354, category: 'station', popular: true },
+  { id: 'loc_gateway', name: 'Gateway of India', address: 'Colaba, Mumbai, Maharashtra 400001', lat: 18.9219, lng: 72.8347, category: 'landmark', popular: true },
+  { id: 'loc_bandra_bandstand', name: 'Bandra Bandstand', address: 'Bandra West, Mumbai, Maharashtra 400050', lat: 19.0465, lng: 72.8193, category: 'landmark' },
+  { id: 'loc_bandra_station', name: 'Bandra Station (West)', address: 'Bandra West, Mumbai, Maharashtra 400050', lat: 19.0544, lng: 72.8406, category: 'station' },
+  { id: 'loc_andheri_station', name: 'Andheri Station (West)', address: 'Andheri West, Mumbai, Maharashtra 400058', lat: 19.1197, lng: 72.8464, category: 'station' },
+  { id: 'loc_dadar', name: 'Dadar Station (West)', address: 'Dadar West, Mumbai, Maharashtra 400028', lat: 19.0178, lng: 72.8433, category: 'station' },
+  { id: 'loc_powai_hiranandani', name: 'Hiranandani Gardens', address: 'Powai, Mumbai, Maharashtra 400076', lat: 19.1197, lng: 72.9053, category: 'residential', popular: true },
+  { id: 'loc_powai_lake', name: 'Powai Lake', address: 'Powai, Mumbai, Maharashtra 400076', lat: 19.1273, lng: 72.9048, category: 'landmark' },
+  { id: 'loc_bkc', name: 'Bandra Kurla Complex (BKC)', address: 'Bandra East, Mumbai, Maharashtra 400051', lat: 19.0635, lng: 72.8633, category: 'commercial', popular: true },
+  { id: 'loc_worli', name: 'Worli Sea Face', address: 'Worli, Mumbai, Maharashtra 400030', lat: 19.0175, lng: 72.8150, category: 'landmark' },
+  { id: 'loc_lower_parel', name: 'Lower Parel / Phoenix', address: 'Lower Parel, Mumbai, Maharashtra 400013', lat: 18.9957, lng: 72.8258, category: 'commercial' },
+  { id: 'loc_phoenix_kurla', name: 'Phoenix Marketcity', address: 'Kurla West, Mumbai, Maharashtra 400070', lat: 19.0864, lng: 72.8890, category: 'mall' },
+  { id: 'loc_rcity', name: 'R City Mall', address: 'Ghatkopar West, Mumbai, Maharashtra 400086', lat: 19.0868, lng: 72.9083, category: 'mall' },
+  { id: 'loc_oberoi_mall', name: 'Oberoi Mall', address: 'Goregaon East, Mumbai, Maharashtra 400063', lat: 19.1728, lng: 72.8603, category: 'mall' },
+  { id: 'loc_nesco', name: 'NESCO IT Park', address: 'Goregaon East, Mumbai, Maharashtra 400063', lat: 19.1486, lng: 72.8545, category: 'commercial' },
+  { id: 'loc_mindspace', name: 'Mindspace Malad', address: 'Malad West, Mumbai, Maharashtra 400064', lat: 19.1784, lng: 72.8365, category: 'commercial' },
+  { id: 'loc_leela', name: 'The Leela Mumbai', address: 'Andheri East, Mumbai, Maharashtra 400059', lat: 19.1155, lng: 72.8698, category: 'landmark' },
+  { id: 'loc_itc', name: 'ITC Grand Central', address: 'Parel, Mumbai, Maharashtra 400012', lat: 18.9985, lng: 72.8378, category: 'landmark' },
+];
+
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+export function searchLocations(query: string, userLat = 19.033, userLng = 73.0297, limit = 8) {
+  if (!query || query.length < 2) return [];
+  const q = query.toLowerCase().trim();
+  return mumbaiLocations
+    .map(loc => {
+      const nameMatch = loc.name.toLowerCase().includes(q) ? 3 : 0;
+      const addrMatch = loc.address.toLowerCase().includes(q) ? 2 : 0;
+      const matchScore = nameMatch + addrMatch;
+      if (matchScore === 0) return null;
+      const dist = calculateDistance(userLat, userLng, loc.lat, loc.lng);
+      const proximityBonus = Math.max(0, 5 - dist / 3);
+      const popularBonus = loc.popular ? 2 : 0;
+      const totalScore = matchScore * 10 + proximityBonus + popularBonus;
+      return { ...loc, distance: Math.round(dist * 10) / 10, score: Math.round(totalScore) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, limit);
+}
+
+export function findNearestLocation(lat: number, lng: number, maxDistKm = 1.5) {
+  let nearest = null;
+  let minDist = Infinity;
+  for (const loc of mumbaiLocations) {
+    const d = calculateDistance(lat, lng, loc.lat, loc.lng);
+    if (d < minDist && d <= maxDistKm) {
+      minDist = d;
+      nearest = loc;
+    }
+  }
+  return nearest;
+}
+
+export function estimateFare(distanceKm: number, durationMin = 0) {
+  const baseFare = 45;
+  const perKm = 14;
+  const perMin = 1.5;
+  const distFare = Math.round(distanceKm * perKm);
+  const timeFare = Math.round((durationMin || distanceKm * 2.5) * perMin);
+  const total = Math.max(80, Math.round(baseFare + distFare + timeFare));
+  return { fare: total, breakdown: `Base ₹${baseFare} + ₹${perKm}/km + time` };
+}
+Core Requirements – Implement ALL 7 Priorities Exactly:
+Priority 1 & 6 – Role Selection at Startup (Must work perfectly)
+On first load (or when no role is saved): Show a beautiful full-screen Role Selection screen with two premium cards:
+
+Start as Passenger – "Book reliable rides across Mumbai & Navi Mumbai • Live tracking • Instant confirmation"
+Start as Driver – "Go online, receive nearby ride requests • Earn flexibly • Professional trips"
+
+On selection, persist the role (Zustand + localStorage), optionally show quick onboarding (name + mock OTP 1234), then route directly to the correct home screen.
+Never default to passenger. The choice must be respected immediately and survive refresh/onboarding. Profile has a secondary "Switch Role" but it is not the main way.
+Priority 2 & 7 – Normal Cab-Booking App Feel
+Passenger flow must feel like Uber/Ola: Map → Set locations → See clear ride options with price & time → Confirm booking → Live active trip.
+No marketplace language. Clean, professional, minimal, fast UI with excellent spacing, hierarchy, and premium cards.
+Priority 3 – Real Map-First Home Screen
+Passenger home has a large interactive Leaflet map as the main element.
+Implement exact "select pin" flow:
+
+Buttons: "Set Pickup Location" / "Set Destination Location"
+In select mode: Clear instruction banner + draggable marker + map tap support
+Confirm button uses findNearestLocation to give nice names
+Permanent green (pickup) and red (destination) markers appear on map
+Once both set → beautiful summary card with distance, estimated fare (use estimateFare), ETA, and "Find available rides" button
+
+Priority 4 – Mumbai-first Autocomplete
+Already solved in the  file above. It prioritizes current location (Sanpada default), shows distance, and ranks smartly so "BHU" near Sanpada shows Bhumi Raj first.
+Priority 5 – Demo / Testing Mode (Very Important)
+Add a clear "Demo Mode" toggle in Profile/Settings.
+When enabled:
+
+Show a floating/collapsible DEMO CONTROLS panel
+Role impersonator (View as Passenger / Driver / Admin)
+Quick actions: Create sample booking, Driver accept, Advance trip stages, Reset data
+Live trip simulation: When trip is in_progress, automatically move driver marker toward destination with interval + linear interpolation + updating ETA
+Admin dashboard with full booking list and action buttons (changes reflect everywhere instantly)
+
+When Demo Mode is OFF → clean user experience, no extra panels.
+Additional Features to Include:
+
+Post-trip 5-star rating modal
+Ride options (Go Mini, Go Comfort, SeatShare with small discount)
+Payment method selection (Cash / UPI)
+Booking history + rebook
+Driver "Go Online" toggle + request list
+Safety "Share live trip" mock button
+Beautiful toasts, empty states, and loading states
+Role-aware quick onboarding after first role selection
+
+Final Instructions:
+
+Make the UI gorgeous and feel premium (use the design system above).
+Everything important must persist with Zustand persist.
+At the end, generate a good README.md with run instructions and test scenarios.
+When finished, reply with: "SeatShare prototype is complete" + short summary.
+
+Start building now. I want a working, beautiful, fully functional prototype in the preview.
