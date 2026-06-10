@@ -2,8 +2,8 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
-import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -57,6 +57,33 @@ export default function FindRidesScreen() {
 
   const matchMutation = useMatchDrivers();
   const { recents, saveRecent } = useRecentSearches();
+
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem("seatshare_prefill_search").then((raw) => {
+        if (!raw) return;
+        try {
+          const prefill = JSON.parse(raw) as {
+            fromText?: string;
+            toText?: string;
+            fromLat?: number;
+            fromLng?: number;
+            toLat?: number;
+            toLng?: number;
+          };
+          if (prefill.fromText) setFromText(prefill.fromText);
+          if (prefill.toText) setToText(prefill.toText);
+          if (prefill.fromLat != null && prefill.fromLng != null)
+            setFromCoords({ lat: prefill.fromLat, lng: prefill.fromLng });
+          if (prefill.toLat != null && prefill.toLng != null)
+            setToCoords({ lat: prefill.toLat, lng: prefill.toLng });
+          AsyncStorage.removeItem("seatshare_prefill_search").catch(() => {});
+        } catch {
+          // ignore
+        }
+      });
+    }, []),
+  );
 
   useEffect(() => {
     AsyncStorage.getItem("seatshare_email_verified").then((v) => {

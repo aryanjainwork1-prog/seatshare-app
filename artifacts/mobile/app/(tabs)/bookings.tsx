@@ -1,4 +1,5 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -208,12 +209,30 @@ export default function BookingsScreen() {
     });
   }
 
+  async function handleFindSimilar(booking: Booking) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const trip = booking.trip as { originAddress?: string; destAddress?: string; originLat?: number; originLng?: number; destLat?: number; destLng?: number } | undefined;
+    const prefill = {
+      fromText: booking.pickupAddress ?? trip?.originAddress ?? "",
+      toText: booking.dropoffAddress ?? trip?.destAddress ?? "",
+      fromLat: booking.pickupLat,
+      fromLng: booking.pickupLng,
+      toLat: booking.dropoffLat,
+      toLng: booking.dropoffLng,
+    };
+    await AsyncStorage.setItem("seatshare_prefill_search", JSON.stringify(prefill));
+    router.push("/");
+  }
+
   function renderBooking(booking: Booking) {
     const statusColor = STATUS_COLORS[booking.status] ?? colors.mutedForeground;
     const statusLabel = STATUS_LABELS[booking.status] ?? booking.status;
     const trip = booking.trip;
     const isActive = ACTIVE_STATUSES.has(booking.status);
     const isTrackable = TRACKABLE_STATUSES.has(booking.status);
+    const isRejected = booking.status === "rejected";
+    const isCancelled = booking.status === "cancelled";
+    const needsSimilarSearch = isRejected || isCancelled;
 
     const driverProfile = (trip as { driverProfile?: { userId?: number; user?: { name?: string }; vehicle?: { make?: string; model?: string; color?: string; licensePlate?: string }; rating?: number } } | undefined)?.driverProfile;
     const driverName = driverProfile?.user?.name;
@@ -224,12 +243,24 @@ export default function BookingsScreen() {
     const hasDriverUserId = !!driverProfile?.userId;
     const showRatePrompt = isCompleted && hasDriverUserId && !ratedBookingIds.has(booking.id);
 
+    const cardBorderColor = isActive
+      ? `${statusColor}55`
+      : isRejected
+        ? `${STATUS_COLORS.rejected}55`
+        : isCancelled
+          ? "#f59e0b44"
+          : colors.border;
+
+    const cardBgColor = isRejected
+      ? `${STATUS_COLORS.rejected}07`
+      : colors.card;
+
     return (
       <Pressable
         key={booking.id}
         style={[
           styles.card,
-          { backgroundColor: colors.card, borderColor: isActive ? `${statusColor}55` : colors.border },
+          { backgroundColor: cardBgColor, borderColor: cardBorderColor },
         ]}
       >
         <View style={styles.cardHeader}>
@@ -269,6 +300,24 @@ export default function BookingsScreen() {
                 </Text>
               </View>
             )}
+          </View>
+        )}
+
+        {isRejected && (
+          <View style={[styles.statusBanner, { backgroundColor: `${STATUS_COLORS.rejected}15`, borderColor: `${STATUS_COLORS.rejected}40` }]}>
+            <Feather name="x-circle" size={13} color={STATUS_COLORS.rejected} />
+            <Text style={[styles.statusBannerText, { color: STATUS_COLORS.rejected, fontFamily: "Inter_500Medium" }]}>
+              Driver declined your request
+            </Text>
+          </View>
+        )}
+
+        {isCancelled && (
+          <View style={[styles.statusBanner, { backgroundColor: "#f59e0b15", borderColor: "#f59e0b40" }]}>
+            <Feather name="slash" size={13} color="#b45309" />
+            <Text style={[styles.statusBannerText, { color: "#b45309", fontFamily: "Inter_500Medium" }]}>
+              You cancelled this booking
+            </Text>
           </View>
         )}
 
@@ -374,6 +423,21 @@ export default function BookingsScreen() {
             <Ionicons name="star-outline" size={15} color="#facc15" />
             <Text style={[styles.rateBtnText, { color: "#b59000", fontFamily: "Inter_600SemiBold" }]}>
               Rate Your Ride
+            </Text>
+          </Pressable>
+        )}
+
+        {needsSimilarSearch && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.findSimilarBtn,
+              { backgroundColor: `${colors.primary}18`, borderColor: `${colors.primary}44`, opacity: pressed ? 0.8 : 1 },
+            ]}
+            onPress={() => handleFindSimilar(booking)}
+          >
+            <Feather name="search" size={15} color={colors.primary} />
+            <Text style={[styles.findSimilarBtnText, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>
+              Find similar rides
             </Text>
           </Pressable>
         )}
@@ -739,6 +803,26 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   rateBtnText: { fontSize: 14 },
+  findSimilarBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingVertical: 10,
+  },
+  findSimilarBtnText: { fontSize: 14 },
+  statusBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  statusBannerText: { fontSize: 12 },
   dateText: { fontSize: 12 },
   emptyState: {
     paddingTop: 80,
