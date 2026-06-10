@@ -23,6 +23,7 @@ import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
 import { MapPickerModal } from "@/components/MapPickerModal";
 import type { PickedLocation } from "@/components/MapPickerModal";
+import { RoutePreviewMap } from "@/components/RoutePreviewMap";
 
 type GeoSuggestion = {
   display_name: string;
@@ -886,6 +887,16 @@ export default function FindRidesScreen() {
             contentContainerStyle={styles.listContent}
             scrollEnabled
             keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={
+              hasSearched && fromCoords && toCoords ? (
+                <RoutePreviewMap
+                  fromCoords={fromCoords}
+                  toCoords={toCoords}
+                  fromLabel={fromText || "Pickup"}
+                  toLabel={toText || "Drop-off"}
+                />
+              ) : null
+            }
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 {hasSearched ? (

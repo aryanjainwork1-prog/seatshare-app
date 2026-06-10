@@ -1,0 +1,147 @@
+import { Feather } from "@expo/vector-icons";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+
+import { useColors } from "@/hooks/useColors";
+
+interface RoutePreviewMapProps {
+  fromCoords: { lat: number; lng: number };
+  toCoords: { lat: number; lng: number };
+  fromLabel?: string;
+  toLabel?: string;
+}
+
+export function RoutePreviewMap({
+  fromCoords,
+  toCoords,
+  fromLabel = "Pickup",
+  toLabel = "Drop-off",
+}: RoutePreviewMapProps) {
+  const colors = useColors();
+
+  return (
+    <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
+      <View style={styles.labelRow}>
+        <View style={styles.labelItem}>
+          <View style={[styles.dot, styles.dotFrom, { borderColor: colors.success }]} />
+          <Text
+            style={[styles.labelText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+            numberOfLines={1}
+          >
+            {fromLabel}
+          </Text>
+        </View>
+        <Feather name="arrow-right" size={12} color={colors.mutedForeground} />
+        <View style={styles.labelItem}>
+          <View style={[styles.dot, { backgroundColor: colors.destructive }]} />
+          <Text
+            style={[styles.labelText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+            numberOfLines={1}
+          >
+            {toLabel}
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.mapPlaceholder, { backgroundColor: `${colors.mutedForeground}10` }]}>
+        <View style={styles.coordsRow}>
+          <View style={styles.coordItem}>
+            <View style={[styles.pinBadge, { backgroundColor: `${colors.success}20` }]}>
+              <Feather name="circle" size={14} color={colors.success} />
+            </View>
+            <View>
+              <Text style={[styles.coordLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                {fromLabel}
+              </Text>
+              <Text style={[styles.coordValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                {fromCoords.lat.toFixed(4)}°, {fromCoords.lng.toFixed(4)}°
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.connector, { backgroundColor: colors.border }]} />
+
+          <View style={styles.coordItem}>
+            <View style={[styles.pinBadge, { backgroundColor: `${colors.destructive}20` }]}>
+              <Feather name="map-pin" size={14} color={colors.destructive} />
+            </View>
+            <View>
+              <Text style={[styles.coordLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                {toLabel}
+              </Text>
+              <Text style={[styles.coordValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                {toCoords.lat.toFixed(4)}°, {toCoords.lng.toFixed(4)}°
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  labelItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    flexShrink: 0,
+  },
+  dotFrom: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+  },
+  labelText: {
+    fontSize: 12,
+    flex: 1,
+  },
+  mapPlaceholder: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  coordsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  coordItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  pinBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  coordLabel: { fontSize: 11 },
+  coordValue: { fontSize: 12, marginTop: 2 },
+  connector: {
+    width: 1,
+    height: 32,
+  },
+});
