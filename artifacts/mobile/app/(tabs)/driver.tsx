@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,6 +20,7 @@ import {
   View,
 } from "react-native";
 import {
+  checkAndClearBgStoppedFlag,
   clearBgLocationCredentials,
   startBackgroundLocationTask,
   stopBackgroundLocationTask,
@@ -43,7 +45,7 @@ import {
 import type { Booking } from "@workspace/api-client-react";
 import { haversineKm } from "@/hooks/useDriverLocation";
 import { distanceKm, etaMinutes } from "@/lib/utils/haversine";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, REFRESH_TOKEN_KEY } from "@/context/AuthContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useMode } from "@/context/ModeContext";
 import { useColors } from "@/hooks/useColors";
@@ -283,7 +285,12 @@ export default function DriverScreen() {
       const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
 
       if (bgStatus === "granted") {
-        await storeBgLocationCredentials(accessToken, process.env.EXPO_PUBLIC_DOMAIN);
+        const storedRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+        await storeBgLocationCredentials(
+          accessToken,
+          process.env.EXPO_PUBLIC_DOMAIN,
+          storedRefreshToken ?? undefined,
+        );
         await startBackgroundLocationTask();
       }
 
@@ -309,9 +316,16 @@ export default function DriverScreen() {
       ) {
         stopForegroundTracking();
       } else if (nextState === "active" && prev !== "active") {
-        if (displayIsOnline && driverProfileId) {
-          startForegroundTracking(driverProfileId).catch(() => {});
-        }
+        checkAndClearBgStoppedFlag().then((wasStopped) => {
+          if (wasStopped) {
+            Alert.alert(
+              "Session Expired",
+              "Your driver session expired while in the background. Toggle offline then online to resume location sharing.",
+            );
+          } else if (displayIsOnline && driverProfileId) {
+            startForegroundTracking(driverProfileId).catch(() => {});
+          }
+        }).catch(() => {});
       }
     });
     return () => subscription.remove();

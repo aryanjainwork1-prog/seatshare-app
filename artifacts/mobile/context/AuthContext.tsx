@@ -24,7 +24,7 @@ interface AuthContextValue {
 }
 
 const ACCESS_TOKEN_KEY = "seatshare_access_token";
-const REFRESH_TOKEN_KEY = "seatshare_refresh_token";
+export const REFRESH_TOKEN_KEY = "seatshare_refresh_token";
 const USER_KEY = "seatshare_user";
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

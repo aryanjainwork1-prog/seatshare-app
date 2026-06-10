@@ -6,10 +6,47 @@ import { Platform } from "react-native";
 export const BACKGROUND_LOCATION_TASK = "seatshare-background-location";
 
 const BG_TOKEN_KEY = "seatshare_bg_token";
+const BG_REFRESH_TOKEN_KEY = "seatshare_bg_refresh_token";
 const BG_DOMAIN_KEY = "seatshare_bg_domain";
+
+export const BG_STOPPED_KEY = "seatshare_bg_stopped";
 
 interface LocationTaskData {
   locations: Location.LocationObject[];
+}
+
+async function postLocation(
+  domain: string,
+  token: string,
+  lat: number,
+  lng: number,
+): Promise<Response> {
+  return fetch(`https://${domain}/api/driver-location`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ lat, lng }),
+  });
+}
+
+async function attemptTokenRefresh(
+  domain: string,
+  storedRefreshToken: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`https://${domain}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: storedRefreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { accessToken?: string };
+    return data.accessToken ?? null;
+  } catch {
+    return null;
+  }
 }
 
 TaskManager.defineTask(
@@ -24,24 +61,39 @@ TaskManager.defineTask(
     if (!location) return;
 
     try {
-      const [token, domain] = await Promise.all([
+      const [token, refreshToken, domain] = await Promise.all([
         AsyncStorage.getItem(BG_TOKEN_KEY),
+        AsyncStorage.getItem(BG_REFRESH_TOKEN_KEY),
         AsyncStorage.getItem(BG_DOMAIN_KEY),
       ]);
 
       if (!token || !domain) return;
 
-      await fetch(`https://${domain}/api/driver-location`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
-        }),
-      });
+      const { latitude: lat, longitude: lng } = location.coords;
+
+      const res = await postLocation(domain, token, lat, lng);
+
+      if (res.status === 401) {
+        if (!refreshToken) {
+          await stopBackgroundLocationTask();
+          await clearBgLocationCredentials();
+          await AsyncStorage.setItem(BG_STOPPED_KEY, "1");
+          return;
+        }
+
+        const newToken = await attemptTokenRefresh(domain, refreshToken);
+
+        if (!newToken) {
+          await stopBackgroundLocationTask();
+          await clearBgLocationCredentials();
+          await AsyncStorage.setItem(BG_STOPPED_KEY, "1");
+          return;
+        }
+
+        await AsyncStorage.setItem(BG_TOKEN_KEY, newToken);
+
+        await postLocation(domain, newToken, lat, lng);
+      }
     } catch {
       // Background fetch failures are silent — connection may be temporarily unavailable
     }
@@ -51,18 +103,33 @@ TaskManager.defineTask(
 export async function storeBgLocationCredentials(
   token: string,
   domain: string,
+  refreshToken?: string,
 ): Promise<void> {
-  await Promise.all([
+  const writes: Promise<void>[] = [
     AsyncStorage.setItem(BG_TOKEN_KEY, token),
     AsyncStorage.setItem(BG_DOMAIN_KEY, domain),
-  ]);
+  ];
+  if (refreshToken) {
+    writes.push(AsyncStorage.setItem(BG_REFRESH_TOKEN_KEY, refreshToken));
+  }
+  await Promise.all(writes);
 }
 
 export async function clearBgLocationCredentials(): Promise<void> {
   await Promise.all([
     AsyncStorage.removeItem(BG_TOKEN_KEY),
+    AsyncStorage.removeItem(BG_REFRESH_TOKEN_KEY),
     AsyncStorage.removeItem(BG_DOMAIN_KEY),
   ]);
+}
+
+export async function checkAndClearBgStoppedFlag(): Promise<boolean> {
+  const val = await AsyncStorage.getItem(BG_STOPPED_KEY);
+  if (val === "1") {
+    await AsyncStorage.removeItem(BG_STOPPED_KEY);
+    return true;
+  }
+  return false;
 }
 
 export async function startBackgroundLocationTask(): Promise<boolean> {
