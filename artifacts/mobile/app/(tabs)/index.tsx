@@ -249,6 +249,24 @@ export default function FindRidesScreen() {
         // ignore
       }
     });
+    AsyncStorage.getItem("seatshare_last_from_coords").then((raw) => {
+      if (!raw) return;
+      try {
+        const coords = JSON.parse(raw) as { lat: number; lng: number };
+        setFromCoords(coords);
+      } catch {
+        // ignore
+      }
+    });
+    AsyncStorage.getItem("seatshare_last_to_coords").then((raw) => {
+      if (!raw) return;
+      try {
+        const coords = JSON.parse(raw) as { lat: number; lng: number };
+        setToCoords(coords);
+      } catch {
+        // ignore
+      }
+    });
   }, []);
 
   async function dismissEmailBanner() {
@@ -281,10 +299,14 @@ export default function FindRidesScreen() {
   function handleMapConfirm(picked: PickedLocation) {
     if (mapPicker === "from") {
       setFromText(picked.address);
-      setFromCoords({ lat: picked.lat, lng: picked.lng });
+      const coords = { lat: picked.lat, lng: picked.lng };
+      setFromCoords(coords);
+      AsyncStorage.setItem("seatshare_last_from_coords", JSON.stringify(coords)).catch(() => {});
     } else if (mapPicker === "to") {
       setToText(picked.address);
-      setToCoords({ lat: picked.lat, lng: picked.lng });
+      const coords = { lat: picked.lat, lng: picked.lng };
+      setToCoords(coords);
+      AsyncStorage.setItem("seatshare_last_to_coords", JSON.stringify(coords)).catch(() => {});
     }
     setMapPicker(null);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
