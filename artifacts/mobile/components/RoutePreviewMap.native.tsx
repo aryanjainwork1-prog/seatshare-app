@@ -3,6 +3,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
+import type { MatchResult } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 
 interface RoutePreviewMapProps {
@@ -10,6 +11,7 @@ interface RoutePreviewMapProps {
   toCoords: { lat: number; lng: number };
   fromLabel?: string;
   toLabel?: string;
+  matches?: MatchResult[];
 }
 
 export function RoutePreviewMap({
@@ -17,6 +19,7 @@ export function RoutePreviewMap({
   toCoords,
   fromLabel = "Pickup",
   toLabel = "Drop-off",
+  matches,
 }: RoutePreviewMapProps) {
   const colors = useColors();
 
@@ -72,6 +75,22 @@ export function RoutePreviewMap({
           title={toLabel}
           pinColor="#dc2626"
         />
+
+        {matches?.map((m) => {
+          const driverLat = m.driverProfile?.currentLat ?? m.trip.originLat;
+          const driverLng = m.driverProfile?.currentLng ?? m.trip.originLng;
+          const driverName = m.driverProfile?.user?.name ?? "Driver";
+          const eta = m.etaMinutes !== undefined ? ` · ${m.etaMinutes} min` : "";
+          return (
+            <Marker
+              key={m.trip.id}
+              coordinate={{ latitude: driverLat, longitude: driverLng }}
+              title={driverName}
+              description={`₹${m.estimatedFare.toFixed(0)}/seat${eta}`}
+              pinColor="#6366f1"
+            />
+          );
+        })}
       </MapView>
     </View>
   );

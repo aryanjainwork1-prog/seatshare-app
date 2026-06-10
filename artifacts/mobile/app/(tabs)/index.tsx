@@ -549,11 +549,21 @@ export default function FindRidesScreen() {
       )}
 
       <>
+          {!hasSearched && userLocation && (
+            <View style={{ paddingTop: topPad + 4 }}>
+              <NearbyDriversMap
+                drivers={nearbyDrivers}
+                userLat={userLocation.lat}
+                userLng={userLocation.lng}
+              />
+            </View>
+          )}
+
           <View
             style={[
               styles.searchHeader,
               {
-                paddingTop: topPad + 8,
+                paddingTop: !hasSearched && userLocation ? 8 : topPad + 8,
                 backgroundColor: colors.background,
                 borderBottomColor: colors.border,
               },
@@ -643,12 +653,7 @@ export default function FindRidesScreen() {
                   toCoords={toCoords}
                   fromLabel={fromText || "Pickup"}
                   toLabel={toText || "Drop-off"}
-                />
-              ) : !hasSearched && userLocation ? (
-                <NearbyDriversMap
-                  drivers={nearbyDrivers}
-                  userLat={userLocation.lat}
-                  userLng={userLocation.lng}
+                  matches={matches}
                 />
               ) : null
             }

@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import type { MatchResult } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 
 interface RoutePreviewMapProps {
@@ -9,6 +10,7 @@ interface RoutePreviewMapProps {
   toCoords: { lat: number; lng: number };
   fromLabel?: string;
   toLabel?: string;
+  matches?: MatchResult[];
 }
 
 export function RoutePreviewMap({
@@ -16,6 +18,7 @@ export function RoutePreviewMap({
   toCoords,
   fromLabel = "Pickup",
   toLabel = "Drop-off",
+  matches,
 }: RoutePreviewMapProps) {
   const colors = useColors();
 
@@ -42,6 +45,15 @@ export function RoutePreviewMap({
           </Text>
         </View>
       </View>
+
+      {matches && matches.length > 0 && (
+        <View style={[styles.matchesBanner, { backgroundColor: `${colors.primary}12`, borderBottomColor: colors.border }]}>
+          <Feather name="truck" size={12} color={colors.primary} />
+          <Text style={[styles.matchesBannerText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
+            {matches.length} matched driver{matches.length === 1 ? "" : "s"}
+          </Text>
+        </View>
+      )}
 
       <View style={[styles.mapPlaceholder, { backgroundColor: `${colors.mutedForeground}10` }]}>
         <View style={styles.coordsRow}>
@@ -144,4 +156,13 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
   },
+  matchesBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  matchesBannerText: { fontSize: 12 },
 });
