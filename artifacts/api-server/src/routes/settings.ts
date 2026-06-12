@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, platformSettingsTable } from "@workspace/db";
-import { z } from "zod/v4";
+import { UpdateSettingsBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -28,10 +28,6 @@ router.get("/settings", async (_req, res): Promise<void> => {
   } else {
     res.json({ stalenessThresholdMinutes: envThreshold(), source: "env" as const });
   }
-});
-
-const UpdateSettingsBody = z.object({
-  stalenessThresholdMinutes: z.number().int().min(1).max(1440),
 });
 
 router.put("/settings", async (req, res): Promise<void> => {

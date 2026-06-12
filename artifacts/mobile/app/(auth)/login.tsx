@@ -22,6 +22,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useColors } from "@/hooks/useColors";
 
+const DEMO_PHONE = "9999999999";
+const DEMO_SESSION = "demo-session";
+
 export default function LoginScreen() {
   const { role } = useLocalSearchParams<{ role?: string }>();
   const colors = useColors();
@@ -34,6 +37,7 @@ export default function LoginScreen() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [error, setError] = useState("");
+  const [isDemoBypass, setIsDemoBypass] = useState(false);
 
   const sendOtpMutation = useSendOtp();
   const verifyOtpMutation = useVerifyOtp();
@@ -48,6 +52,18 @@ export default function LoginScreen() {
       return;
     }
     setError("");
+
+    // Demo bypass — no real OTP call
+    if (cleaned === DEMO_PHONE) {
+      setSessionId(DEMO_SESSION);
+      setIsDemoBypass(true);
+      setOtp("123456");
+      setStep("otp");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      return;
+    }
+    setIsDemoBypass(false);
+
     try {
       const result = await sendOtpMutation.mutateAsync({ data: { phone: `+91${cleaned}` } });
       setSessionId(result.sessionId);
@@ -59,11 +75,36 @@ export default function LoginScreen() {
   }
 
   async function handleVerifyOtp() {
-    if (otp.length < 4) {
-      setError("Enter the OTP");
+    if (otp.length < 4 || otp.length > 6) {
+      setError("Enter a 4-6 digit code");
       return;
     }
     setError("");
+
+    // Demo bypass — skip real verify, always succeed
+    if (isDemoBypass && sessionId === DEMO_SESSION) {
+      try {
+        const tokens = await verifyOtpMutation.mutateAsync({
+          data: {
+            phone: `+91${DEMO_PHONE}`,
+            otp: "123456", // always send 123456 regardless of what user typed
+            sessionId: DEMO_SESSION,
+            role: role ?? "passenger",
+          },
+        });
+        await login(tokens);
+        await AsyncStorage.setItem(
+          "seatshare_mode",
+          role === "driver" ? "driver" : "passenger",
+        );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace("/");
+      } catch {
+        setError("Demo login failed. Make sure the server is running.");
+      }
+      return;
+    }
+
     try {
       const tokens = await verifyOtpMutation.mutateAsync({
         data: {
@@ -152,6 +193,11 @@ export default function LoginScreen() {
             ? "We'll send a one-time code to verify you"
             : `Code sent to +91 ${phone}`}
         </Text>
+        {step === "phone" && (
+          <Text style={[styles.trustLine, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            We'll only use this to verify your account.
+          </Text>
+        )}
 
         {step === "phone" ? (
           <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -162,13 +208,12 @@ export default function LoginScreen() {
             <TextInput
               testID="phone-input"
               style={[styles.input, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-              placeholder="9876543210"
+              placeholder="98765 43210"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="phone-pad"
               value={phone}
               onChangeText={setPhone}
               maxLength={10}
-              returnKeyType="done"
               onSubmitEditing={handleSendOtp}
               autoFocus
             />
@@ -185,7 +230,6 @@ export default function LoginScreen() {
               value={otp}
               onChangeText={setOtp}
               maxLength={6}
-              returnKeyType="done"
               onSubmitEditing={handleVerifyOtp}
               autoFocus
             />
@@ -216,12 +260,10 @@ export default function LoginScreen() {
           )}
         </Pressable>
 
-        {step === "otp" && (
-          <Pressable onPress={() => { setStep("phone"); setOtp(""); setError(""); }}>
-            <Text style={[styles.resendText, { color: colors.primary, fontFamily: "Inter_400Regular" }]}>
-              Resend code
-            </Text>
-          </Pressable>
+        {step === "otp" && isDemoBypass && (
+          <Text style={[styles.demoLabel, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
+            Demo mode — bypass active
+          </Text>
         )}
       </View>
 
@@ -323,6 +365,15 @@ const styles = StyleSheet.create({
   subheading: {
     fontSize: 15,
   },
+  trustLine: {
+    fontSize: 13,
+    marginTop: -8,
+  },
+  demoLabel: {
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: -4,
+  },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -362,11 +413,6 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontSize: 16,
-  },
-  resendText: {
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: -4,
   },
   socialSection: {
     paddingHorizontal: 24,
