@@ -2,7 +2,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,7 +23,6 @@ import { useDemoMode } from "@/context/DemoModeContext";
 import { useColors } from "@/hooks/useColors";
 
 const DEMO_PHONE = "9999999999";
-const DEMO_SESSION = "demo-session";
 
 export default function LoginScreen() {
   const { role } = useLocalSearchParams<{ role?: string }>();
@@ -53,13 +52,20 @@ export default function LoginScreen() {
     }
     setError("");
 
-    // Demo bypass — no real OTP call
+    // Demo bypass — call real send-otp so the server has a valid session,
+    // then pre-fill 123456 (server accepts it as a magic OTP).
     if (cleaned === DEMO_PHONE) {
-      setSessionId(DEMO_SESSION);
       setIsDemoBypass(true);
-      setOtp("123456");
-      setStep("otp");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      try {
+        const result = await sendOtpMutation.mutateAsync({ data: { phone: `+91${cleaned}` } });
+        setSessionId(result.sessionId);
+        setOtp("123456");
+        setStep("otp");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch {
+        setIsDemoBypass(false);
+        setError("Demo login failed. Make sure the server is running.");
+      }
       return;
     }
     setIsDemoBypass(false);
@@ -81,14 +87,14 @@ export default function LoginScreen() {
     }
     setError("");
 
-    // Demo bypass — skip real verify, always succeed
-    if (isDemoBypass && sessionId === DEMO_SESSION) {
+    // Demo bypass — use the real sessionId from send-otp + magic OTP 123456
+    if (isDemoBypass) {
       try {
         const tokens = await verifyOtpMutation.mutateAsync({
           data: {
             phone: `+91${DEMO_PHONE}`,
-            otp: "123456", // always send 123456 regardless of what user typed
-            sessionId: DEMO_SESSION,
+            otp: "123456",
+            sessionId: sessionId!,
             role: role ?? "passenger",
           },
         });
