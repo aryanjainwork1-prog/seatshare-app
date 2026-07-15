@@ -24,6 +24,7 @@ import Users from "@/pages/users";
 import Drivers from "@/pages/drivers";
 import Trips from "@/pages/trips";
 import Bookings from "@/pages/bookings";
+import RideRequests from "@/pages/ride-requests";
 import Payments from "@/pages/payments";
 import Support from "@/pages/support";
 import Logs from "@/pages/logs";
@@ -102,6 +103,7 @@ function Router() {
               <Route path="/users" component={Users} />
               <Route path="/drivers" component={Drivers} />
               <Route path="/trips" component={Trips} />
+              <Route path="/ride-requests" component={RideRequests} />
               <Route path="/bookings" component={Bookings} />
               <Route path="/payments" component={Payments} />
               <Route path="/support" component={Support} />

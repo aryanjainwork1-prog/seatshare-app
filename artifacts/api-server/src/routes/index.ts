@@ -18,6 +18,7 @@ import pushTokenRouter from "./push-token";
 import meRouter from "./me";
 import driverLocationRouter from "./driver-location";
 import routeRouter from "./route";
+import rideRequestsRouter from "./ride-requests";
 
 const router: IRouter = Router();
 
@@ -37,6 +38,7 @@ router.use(ratingsRouter);
 router.use(vehiclesRouter);
 router.use(driversRouter);   // GET list/profile + PATCH own profile; /verify guarded inline
 router.use(matchRouter);     // POST /match — passengers search rides
+router.use(rideRequestsRouter); // Concierge ride requests; PATCH guarded inline (admin)
 router.use(pushTokenRouter); // PATCH /me/push-token — register Expo push token
 router.use(driverLocationRouter); // POST /driver-location — background location update from driver
 router.use(routeRouter);     // GET /route — road-following polyline via OSRM

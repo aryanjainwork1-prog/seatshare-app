@@ -1,0 +1,244 @@
+# SeatShare Phase 1 — Concierge Pilot Workflow
+
+This is a product workflow change for the pilot.
+
+The objective is NOT to redesign the application.
+
+The objective is to change only the passenger request flow while preserving the existing application architecture, UI, authentication, driver experience, admin authentication, APIs wherever possible, and database structure unless absolutely necessary.
+
+The pilot will initially operate manually through the SeatShare Admin Dashboard.
+
+--------------------------------------------------
+PRIMARY OBJECTIVE
+--------------------------------------------------
+
+Replace automatic ride discovery with a concierge request workflow.
+
+The passenger should submit a ride request.
+
+The administrator will manually assign drivers.
+
+No automatic matching should occur.
+
+--------------------------------------------------
+PASSENGER FLOW
+--------------------------------------------------
+
+Current flow:
+
+Passenger enters pickup and destination.
+
+↓
+
+Application immediately shows available rides.
+
+↓
+
+Passenger chooses a ride.
+
+↓
+
+Booking continues.
+
+REMOVE ONLY THIS PART.
+
+Replace it with:
+
+Passenger enters:
+
+• Pickup
+• Drop-off
+• Preferred departure time
+• Preferred arrival time
+• Existing ride preferences
+
+↓
+
+Create Ride Request
+
+↓
+
+Save request
+
+Status = PENDING
+
+↓
+
+Redirect passenger to a Waiting Screen.
+
+The Waiting Screen should contain:
+
+Title:
+Finding the best ride for you...
+
+Subtitle:
+Our dispatch team is reviewing available drivers.
+
+Estimated wait:
+Approximately 1–2 minutes
+
+Progress:
+
+✓ Request Submitted
+
+✓ Reviewing Available Drivers
+
+✓ Assigning Your Ride
+
+The passenger must NOT see:
+
+• Available rides
+• Available drivers
+• Matching results
+• Suggested rides
+
+--------------------------------------------------
+BACKEND
+--------------------------------------------------
+
+When the passenger submits a request:
+
+Create a Ride Request.
+
+Store:
+
+• Passenger
+• Pickup
+• Drop-off
+• Preferred departure
+• Preferred arrival
+• Preferences
+• Walking distance
+• Timestamp
+• Status
+
+Initial status:
+
+PENDING
+
+Do NOT perform automatic ride matching.
+
+Do NOT perform driver selection.
+
+Do NOT implement AI.
+
+Do NOT implement optimization.
+
+Simply persist the request.
+
+--------------------------------------------------
+ADMIN WEBSITE
+--------------------------------------------------
+
+Every Ride Request must immediately become available inside the existing SeatShare Admin Dashboard.
+
+Do NOT create a new admin application.
+
+Extend the existing dashboard.
+
+Create a section called:
+
+Pending Ride Requests
+
+Display:
+
+• Passenger Name
+• Pickup
+• Drop-off
+• Departure Time
+• Arrival Time
+• Preferences
+• Walking Distance
+• Request Time
+• Current Status
+
+Provide administrator actions:
+
+• View
+• Approve
+• Reject
+• Assign Driver
+• Edit Pickup
+• Edit Drop-off
+• Add Internal Notes
+• Change Status
+
+The admin dashboard should update in near real-time when new Ride Requests arrive.
+
+--------------------------------------------------
+DRIVER FLOW
+--------------------------------------------------
+
+Do NOT change the existing driver workflow.
+
+Drivers continue to:
+
+• Create Ride
+• Go Online
+• Receive assignments
+• Accept assignments
+• Complete rides
+
+Driver rides remain active until manually completed.
+
+Do NOT implement:
+
+• Multiple pickups
+• Multiple drop-offs
+• Pool optimization
+
+--------------------------------------------------
+MATCHING
+--------------------------------------------------
+
+Do NOT build:
+
+• Automatic ride discovery
+• Automatic driver assignment
+• AI matching
+• Optimization algorithms
+• Recommendation engine
+• Route optimization
+
+During the pilot every assignment will be performed manually by the administrator.
+
+--------------------------------------------------
+IMPORTANT ARCHITECTURE REQUIREMENTS
+--------------------------------------------------
+
+Preserve the existing:
+
+• Authentication
+• Authorization
+• Driver UI
+• Passenger UI wherever possible
+• Admin authentication
+• Existing APIs unless modification is required
+• Existing database unless additional tables/fields are required
+
+Avoid unnecessary refactoring.
+
+Implement the smallest set of changes necessary.
+
+--------------------------------------------------
+IMPLEMENTATION PROCESS
+--------------------------------------------------
+
+Before modifying any code:
+
+1. Inspect the existing implementation.
+2. Identify every screen, API, database model and component that will be affected.
+3. Produce a short implementation plan.
+4. Only then begin implementation.
+
+After implementation provide:
+
+1. Files changed.
+2. Database changes.
+3. API changes.
+4. UI changes.
+5. Any migration required.
+6. Testing steps.
+7. Risks introduced.
+
+Do not modify unrelated functionality.

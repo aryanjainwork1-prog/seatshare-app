@@ -14,7 +14,7 @@ description: >-
   accessibility, animation, layout, typography, font pairing, spacing,
   interaction states, shadow, and gradient. Integrations: shadcn/ui MCP for
   component search and examples.
-enabled: false
+enabled: true
 ---
 
 # UI/UX Pro Max - Design Intelligence

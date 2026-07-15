@@ -47,6 +47,7 @@ A full-stack ride-sharing platform admin control panel with real-time driver tra
 - **Dashboard**: Live platform metrics (users, drivers, trips, revenue, bookings, open tickets) + charts
 - **Live Map**: Real-time driver location tracking via WebSocket, online drivers panel, active trips panel
 - **Users / Drivers / Trips / Bookings / Payments / Support / Logs**: Full CRUD management pages
+- **Ride Requests (Concierge Pilot)**: Passengers submit ride requests from mobile (no browsing/matching); admins dispatch via `/ride-requests` page (approve/reject, assign driver, notes). Mobile waiting screen at `app/request/[id].tsx` polls every 5s. Preferred times stored as free text by design.
 
 ## User preferences
 

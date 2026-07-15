@@ -765,6 +765,91 @@ paths:
               schema:
                 $ref: "#/components/schemas/Booking"
 
+  /ride-requests:
+    get:
+      operationId: listRideRequests
+      summary: List ride requests
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: passengerId
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of ride requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RideRequestList"
+    post:
+      operationId: createRideRequest
+      summary: Passenger submits a ride request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RideRequestInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RideRequest"
+
+  /ride-requests/{id}:
+    get:
+      operationId: getRideRequest
+      summary: Get ride request by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ride request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RideRequest"
+    patch:
+      operationId: updateRideRequest
+      summary: Admin updates a ride request (status, assignment, edits, notes)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RideRequestUpdateInput"
+      responses:
+        "200":
+          description: Updated ride request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RideRequest"
+
   /payments:
     get:
       operationId: listPayments
@@ -1559,6 +1644,112 @@ components:
       type: object
       properties:
         boardingCode:
+          type: string
+
+    RideRequest:
+      type: object
+      required: [id, passengerId, pickupAddress, dropoffAddress, status, createdAt]
+      properties:
+        id:
+          type: integer
+        passengerId:
+          type: integer
+        pickupAddress:
+          type: string
+        dropoffAddress:
+          type: string
+        pickupLat:
+          type: ["number", "null"]
+        pickupLng:
+          type: ["number", "null"]
+        dropoffLat:
+          type: ["number", "null"]
+        dropoffLng:
+          type: ["number", "null"]
+        preferredDepartureTime:
+          type: ["string", "null"]
+        preferredArrivalTime:
+          type: ["string", "null"]
+        preferences:
+          type: ["string", "null"]
+        walkingDistanceKm:
+          type: ["number", "null"]
+        status:
+          type: string
+        assignedDriverProfileId:
+          type: ["integer", "null"]
+        adminNotes:
+          type: ["string", "null"]
+        passenger:
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: "null"
+        assignedDriver:
+          oneOf:
+            - $ref: "#/components/schemas/DriverProfile"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    RideRequestList:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RideRequest"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    RideRequestInput:
+      type: object
+      required: [pickupAddress, dropoffAddress]
+      properties:
+        pickupAddress:
+          type: string
+          minLength: 1
+        dropoffAddress:
+          type: string
+          minLength: 1
+        pickupLat:
+          type: number
+        pickupLng:
+          type: number
+        dropoffLat:
+          type: number
+        dropoffLng:
+          type: number
+        preferredDepartureTime:
+          type: string
+        preferredArrivalTime:
+          type: string
+        preferences:
+          type: string
+        walkingDistanceKm:
+          type: number
+
+    RideRequestUpdateInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, approved, rejected, assigned, completed, cancelled]
+        pickupAddress:
+          type: string
+        dropoffAddress:
+          type: string
+        assignedDriverProfileId:
+          type: ["integer", "null"]
+        adminNotes:
           type: string
 
     Payment:

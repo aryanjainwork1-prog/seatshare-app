@@ -1,0 +1,317 @@
+# SeatShare Phase 1 — Concierge Pilot Workflow
+
+## IMPORTANT
+
+This is an incremental workflow update.
+
+DO NOT redesign the application.
+
+DO NOT rewrite the architecture.
+
+DO NOT refactor unrelated code.
+
+DO NOT modify authentication, driver workflow, admin authentication, maps, payments, notifications, WebSocket infrastructure, or any unrelated functionality.
+
+Preserve the existing frontend design, backend architecture, APIs, database schema, navigation, and UI wherever possible.
+
+Only implement the minimum changes required to support the new workflow.
+
+The objective is to keep the existing application looking complete while changing only the operational workflow.
+
+--------------------------------------------------
+STEP 1 — ANALYZE FIRST
+--------------------------------------------------
+
+Before writing any code:
+
+1. Analyze the current implementation.
+2. Identify every affected screen.
+3. Identify affected APIs.
+4. Identify affected database models.
+5. Identify affected backend services.
+6. Produce a concise implementation plan.
+7. List every file that will change and explain why.
+
+Only after the analysis is complete should implementation begin.
+
+--------------------------------------------------
+PROJECT GOAL
+--------------------------------------------------
+
+SeatShare Phase 1 operates as a concierge-style ride-sharing platform.
+
+Passengers DO NOT browse rides.
+
+Passengers submit Ride Requests.
+
+The SeatShare Admin Dashboard manually dispatches rides.
+
+There is NO automatic ride discovery.
+
+There is NO automatic ride matching.
+
+There is NO AI matching.
+
+The administrator is the dispatcher.
+
+--------------------------------------------------
+PASSENGER FLOW
+--------------------------------------------------
+
+REMOVE ONLY THIS PART OF THE CURRENT FLOW:
+
+Passenger enters Pickup + Drop
+
+↓
+
+Application displays available rides
+
+↓
+
+Passenger selects ride
+
+↓
+
+Booking begins
+
+Replace it with:
+
+Passenger enters:
+
+• Pickup
+• Drop-off
+• Preferred Departure Time
+• Preferred Arrival Time
+• Ride Preferences
+• Walking Distance
+
+↓
+
+Create Ride Request
+
+↓
+
+Store Ride Request
+
+↓
+
+Status = PENDING
+
+↓
+
+Navigate to Waiting Screen
+
+--------------------------------------------------
+WAITING SCREEN
+--------------------------------------------------
+
+The Waiting Screen should be clean and production quality.
+
+The passenger must NEVER see:
+
+• Available rides
+• Driver list
+• Search results
+• Matching suggestions
+
+Instead display:
+
+Title
+
+Finding the best ride for you...
+
+Subtitle
+
+Our dispatch team is reviewing available drivers.
+
+Estimated Wait
+
+Approximately 1–2 minutes
+
+Progress
+
+✓ Request Submitted
+
+✓ Reviewing Available Drivers
+
+✓ Assigning Your Ride
+
+Display the current request status.
+
+The screen should support future status updates without redesign.
+
+--------------------------------------------------
+BACKEND
+--------------------------------------------------
+
+When a Ride Request is submitted:
+
+Persist:
+
+• Passenger
+• Pickup
+• Drop-off
+• Preferred Departure Time
+• Preferred Arrival Time
+• Ride Preferences
+• Walking Distance
+• Timestamp
+• Status
+
+Initial Status:
+
+PENDING
+
+Do NOT:
+
+• Match rides
+• Recommend drivers
+• Optimize routes
+• Automatically assign drivers
+• Automatically notify drivers
+
+Simply create and persist the Ride Request.
+
+--------------------------------------------------
+ADMIN DASHBOARD
+--------------------------------------------------
+
+Use the EXISTING SeatShare Admin Dashboard.
+
+Do NOT create another admin application.
+
+Extend the existing dashboard.
+
+Create a new module:
+
+Pending Ride Requests
+
+Every Ride Request should immediately appear inside the dashboard.
+
+Display:
+
+• Passenger Name
+• Pickup
+• Drop-off
+• Departure Time
+• Arrival Time
+• Preferences
+• Walking Distance
+• Request Time
+• Status
+
+Administrator actions:
+
+• View Request
+• Approve
+• Reject
+• Assign Driver
+• Edit Pickup
+• Edit Drop-off
+• Add Internal Notes
+• Change Status
+
+The Admin Dashboard should update in near real-time whenever a new Ride Request is created.
+
+--------------------------------------------------
+DRIVER FLOW
+--------------------------------------------------
+
+Do NOT change the driver workflow.
+
+Drivers continue to:
+
+• Create Ride
+• Go Online
+• Stay Online
+• Accept Assignments
+• Complete Ride
+
+Driver rides remain active until manually completed.
+
+Do NOT implement:
+
+• Multi-passenger logic
+• Pool optimization
+• Route optimization
+• Dynamic routing
+
+--------------------------------------------------
+MATCHING
+--------------------------------------------------
+
+There is NO automatic matching during Phase 1.
+
+The administrator manually decides which driver should receive which passenger.
+
+The backend simply provides all required request information.
+
+--------------------------------------------------
+ARCHITECTURE
+--------------------------------------------------
+
+The mobile application becomes a Ride Request submission interface.
+
+The Admin Dashboard becomes the operational dispatch center.
+
+The backend simply transfers Ride Requests to the dashboard.
+
+The existing UI should remain visually unchanged wherever possible.
+
+Only replace the passenger ride discovery workflow.
+
+--------------------------------------------------
+CODE QUALITY
+--------------------------------------------------
+
+Avoid unnecessary refactoring.
+
+Reuse existing components.
+
+Reuse existing APIs.
+
+Reuse existing database models where possible.
+
+Only introduce new tables or fields if absolutely necessary.
+
+Maintain backward compatibility.
+
+--------------------------------------------------
+DEFINITION OF DONE
+--------------------------------------------------
+
+The implementation is complete only when:
+
+✓ Passenger submits a Ride Request.
+
+✓ Ride Request is stored.
+
+✓ Passenger sees the Waiting Screen.
+
+✓ Ride Request immediately appears in the existing Admin Dashboard.
+
+✓ Administrator can Approve, Reject or Assign Driver.
+
+✓ Driver workflow remains unchanged.
+
+✓ Existing functionality continues to work.
+
+--------------------------------------------------
+AFTER IMPLEMENTATION
+--------------------------------------------------
+
+Provide:
+
+1. Implementation summary
+2. Files changed
+3. Database changes
+4. API changes
+5. UI changes
+6. Testing steps
+7. Migration steps (if any)
+8. Risks introduced
+9. Future improvements
+
+Run application tests before completion.
+
+Do not modify unrelated functionality.

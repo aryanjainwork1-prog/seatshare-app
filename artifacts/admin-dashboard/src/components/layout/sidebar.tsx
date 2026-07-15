@@ -14,6 +14,7 @@ import {
   MapPin,
   LogOut,
   Settings,
+  Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import {
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/map", label: "Live Map", icon: MapPin },
+  { href: "/ride-requests", label: "Ride Requests", icon: Inbox },
   { href: "/users", label: "Users", icon: Users },
   { href: "/drivers", label: "Drivers", icon: Car },
   { href: "/trips", label: "Trips", icon: Map },

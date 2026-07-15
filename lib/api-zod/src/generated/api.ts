@@ -1819,6 +1819,307 @@ export const CancelBookingResponse = zod.object({
 
 
 /**
+ * @summary List ride requests
+ */
+export const ListRideRequestsQueryParams = zod.object({
+  "status": zod.coerce.string().optional(),
+  "passengerId": zod.coerce.number().optional(),
+  "page": zod.coerce.number().optional(),
+  "limit": zod.coerce.number().optional()
+})
+
+export const ListRideRequestsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.number(),
+  "passengerId": zod.number(),
+  "pickupAddress": zod.string(),
+  "dropoffAddress": zod.string(),
+  "pickupLat": zod.number().nullish(),
+  "pickupLng": zod.number().nullish(),
+  "dropoffLat": zod.number().nullish(),
+  "dropoffLng": zod.number().nullish(),
+  "preferredDepartureTime": zod.string().nullish(),
+  "preferredArrivalTime": zod.string().nullish(),
+  "preferences": zod.string().nullish(),
+  "walkingDistanceKm": zod.number().nullish(),
+  "status": zod.string(),
+  "assignedDriverProfileId": zod.number().nullish(),
+  "adminNotes": zod.string().nullish(),
+  "passenger": zod.union([zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "lateCancellations": zod.number().optional(),
+  "averageRating": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "assignedDriver": zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "licenseNumber": zod.string().nullish(),
+  "rating": zod.number(),
+  "totalTrips": zod.number(),
+  "isVerified": zod.boolean(),
+  "isOnline": zod.boolean(),
+  "currentLat": zod.number().nullish(),
+  "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "lateCancellations": zod.number().optional(),
+  "averageRating": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+}).optional(),
+  "vehicle": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "make": zod.string(),
+  "model": zod.string(),
+  "year": zod.number(),
+  "color": zod.string(),
+  "licensePlate": zod.string().nullish(),
+  "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "limit": zod.number()
+})
+
+
+/**
+ * @summary Passenger submits a ride request
+ */
+
+
+
+
+export const CreateRideRequestBody = zod.object({
+  "pickupAddress": zod.string().min(1),
+  "dropoffAddress": zod.string().min(1),
+  "pickupLat": zod.number().optional(),
+  "pickupLng": zod.number().optional(),
+  "dropoffLat": zod.number().optional(),
+  "dropoffLng": zod.number().optional(),
+  "preferredDepartureTime": zod.string().optional(),
+  "preferredArrivalTime": zod.string().optional(),
+  "preferences": zod.string().optional(),
+  "walkingDistanceKm": zod.number().optional()
+})
+
+
+/**
+ * @summary Get ride request by ID
+ */
+export const GetRideRequestParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetRideRequestResponse = zod.object({
+  "id": zod.number(),
+  "passengerId": zod.number(),
+  "pickupAddress": zod.string(),
+  "dropoffAddress": zod.string(),
+  "pickupLat": zod.number().nullish(),
+  "pickupLng": zod.number().nullish(),
+  "dropoffLat": zod.number().nullish(),
+  "dropoffLng": zod.number().nullish(),
+  "preferredDepartureTime": zod.string().nullish(),
+  "preferredArrivalTime": zod.string().nullish(),
+  "preferences": zod.string().nullish(),
+  "walkingDistanceKm": zod.number().nullish(),
+  "status": zod.string(),
+  "assignedDriverProfileId": zod.number().nullish(),
+  "adminNotes": zod.string().nullish(),
+  "passenger": zod.union([zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "lateCancellations": zod.number().optional(),
+  "averageRating": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "assignedDriver": zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "licenseNumber": zod.string().nullish(),
+  "rating": zod.number(),
+  "totalTrips": zod.number(),
+  "isVerified": zod.boolean(),
+  "isOnline": zod.boolean(),
+  "currentLat": zod.number().nullish(),
+  "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "lateCancellations": zod.number().optional(),
+  "averageRating": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+}).optional(),
+  "vehicle": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "make": zod.string(),
+  "model": zod.string(),
+  "year": zod.number(),
+  "color": zod.string(),
+  "licensePlate": zod.string().nullish(),
+  "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Admin updates a ride request (status, assignment, edits, notes)
+ */
+export const UpdateRideRequestParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateRideRequestBody = zod.object({
+  "status": zod.enum(['pending', 'approved', 'rejected', 'assigned', 'completed', 'cancelled']).optional(),
+  "pickupAddress": zod.string().optional(),
+  "dropoffAddress": zod.string().optional(),
+  "assignedDriverProfileId": zod.number().nullish(),
+  "adminNotes": zod.string().optional()
+})
+
+export const UpdateRideRequestResponse = zod.object({
+  "id": zod.number(),
+  "passengerId": zod.number(),
+  "pickupAddress": zod.string(),
+  "dropoffAddress": zod.string(),
+  "pickupLat": zod.number().nullish(),
+  "pickupLng": zod.number().nullish(),
+  "dropoffLat": zod.number().nullish(),
+  "dropoffLng": zod.number().nullish(),
+  "preferredDepartureTime": zod.string().nullish(),
+  "preferredArrivalTime": zod.string().nullish(),
+  "preferences": zod.string().nullish(),
+  "walkingDistanceKm": zod.number().nullish(),
+  "status": zod.string(),
+  "assignedDriverProfileId": zod.number().nullish(),
+  "adminNotes": zod.string().nullish(),
+  "passenger": zod.union([zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "lateCancellations": zod.number().optional(),
+  "averageRating": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "assignedDriver": zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "licenseNumber": zod.string().nullish(),
+  "rating": zod.number(),
+  "totalTrips": zod.number(),
+  "isVerified": zod.boolean(),
+  "isOnline": zod.boolean(),
+  "currentLat": zod.number().nullish(),
+  "currentLng": zod.number().nullish(),
+  "locationUpdatedAt": zod.coerce.date().nullish(),
+  "user": zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "name": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "workplace": zod.string().nullish(),
+  "officeLocation": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "lateCancellations": zod.number().optional(),
+  "averageRating": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+}).optional(),
+  "vehicle": zod.union([zod.object({
+  "id": zod.number(),
+  "driverProfileId": zod.number(),
+  "make": zod.string(),
+  "model": zod.string(),
+  "year": zod.number(),
+  "color": zod.string(),
+  "licensePlate": zod.string().nullish(),
+  "capacity": zod.number(),
+  "bodyType": zod.string().nullish(),
+  "conditionNote": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
  * @summary List payments
  */
 export const ListPaymentsQueryParams = zod.object({

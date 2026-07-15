@@ -40,6 +40,7 @@ import type {
   ListDriverProfilesParams,
   ListPaymentsParams,
   ListRatingsParams,
+  ListRideRequestsParams,
   ListSupportTicketsParams,
   ListTripsParams,
   ListUsersParams,
@@ -61,6 +62,10 @@ import type {
   RegisterDriverInput,
   RegisterPushTokenInput,
   RejectInput,
+  RideRequest,
+  RideRequestInput,
+  RideRequestList,
+  RideRequestUpdateInput,
   StatsActivity,
   StatsOverview,
   SupportTicket,
@@ -2765,6 +2770,310 @@ export const useCancelBooking = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCancelBookingMutationOptions(options));
+    }
+
+export const getListRideRequestsUrl = (params?: ListRideRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/ride-requests?${stringifiedParams}` : `/api/ride-requests`
+}
+
+/**
+ * @summary List ride requests
+ */
+export const listRideRequests = async (params?: ListRideRequestsParams, options?: RequestInit): Promise<RideRequestList> => {
+
+  return customFetch<RideRequestList>(getListRideRequestsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRideRequestsQueryKey = (params?: ListRideRequestsParams,) => {
+    return [
+    `/api/ride-requests`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListRideRequestsQueryOptions = <TData = Awaited<ReturnType<typeof listRideRequests>>, TError = ErrorType<unknown>>(params?: ListRideRequestsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRideRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRideRequestsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRideRequests>>> = ({ signal }) => listRideRequests(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRideRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRideRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof listRideRequests>>>
+export type ListRideRequestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List ride requests
+ */
+
+export function useListRideRequests<TData = Awaited<ReturnType<typeof listRideRequests>>, TError = ErrorType<unknown>>(
+ params?: ListRideRequestsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRideRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRideRequestsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateRideRequestUrl = () => {
+
+
+
+
+  return `/api/ride-requests`
+}
+
+/**
+ * @summary Passenger submits a ride request
+ */
+export const createRideRequest = async (rideRequestInput: RideRequestInput, options?: RequestInit): Promise<RideRequest> => {
+
+  return customFetch<RideRequest>(getCreateRideRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      rideRequestInput,)
+  }
+);}
+
+
+
+
+export const getCreateRideRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRideRequest>>, TError,{data: BodyType<RideRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRideRequest>>, TError,{data: BodyType<RideRequestInput>}, TContext> => {
+
+const mutationKey = ['createRideRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRideRequest>>, {data: BodyType<RideRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRideRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRideRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createRideRequest>>>
+    export type CreateRideRequestMutationBody = BodyType<RideRequestInput>
+    export type CreateRideRequestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Passenger submits a ride request
+ */
+export const useCreateRideRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRideRequest>>, TError,{data: BodyType<RideRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRideRequest>>,
+        TError,
+        {data: BodyType<RideRequestInput>},
+        TContext
+      > => {
+      return useMutation(getCreateRideRequestMutationOptions(options));
+    }
+
+export const getGetRideRequestUrl = (id: number,) => {
+
+
+
+
+  return `/api/ride-requests/${id}`
+}
+
+/**
+ * @summary Get ride request by ID
+ */
+export const getRideRequest = async (id: number, options?: RequestInit): Promise<RideRequest> => {
+
+  return customFetch<RideRequest>(getGetRideRequestUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRideRequestQueryKey = (id: number,) => {
+    return [
+    `/api/ride-requests/${id}`
+    ] as const;
+    }
+
+
+export const getGetRideRequestQueryOptions = <TData = Awaited<ReturnType<typeof getRideRequest>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRideRequest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRideRequestQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRideRequest>>> = ({ signal }) => getRideRequest(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRideRequest>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRideRequestQueryResult = NonNullable<Awaited<ReturnType<typeof getRideRequest>>>
+export type GetRideRequestQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get ride request by ID
+ */
+
+export function useGetRideRequest<TData = Awaited<ReturnType<typeof getRideRequest>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRideRequest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRideRequestQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateRideRequestUrl = (id: number,) => {
+
+
+
+
+  return `/api/ride-requests/${id}`
+}
+
+/**
+ * @summary Admin updates a ride request (status, assignment, edits, notes)
+ */
+export const updateRideRequest = async (id: number,
+    rideRequestUpdateInput: RideRequestUpdateInput, options?: RequestInit): Promise<RideRequest> => {
+
+  return customFetch<RideRequest>(getUpdateRideRequestUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      rideRequestUpdateInput,)
+  }
+);}
+
+
+
+
+export const getUpdateRideRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRideRequest>>, TError,{id: number;data: BodyType<RideRequestUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRideRequest>>, TError,{id: number;data: BodyType<RideRequestUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateRideRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRideRequest>>, {id: number;data: BodyType<RideRequestUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateRideRequest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRideRequestMutationResult = NonNullable<Awaited<ReturnType<typeof updateRideRequest>>>
+    export type UpdateRideRequestMutationBody = BodyType<RideRequestUpdateInput>
+    export type UpdateRideRequestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Admin updates a ride request (status, assignment, edits, notes)
+ */
+export const useUpdateRideRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRideRequest>>, TError,{id: number;data: BodyType<RideRequestUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRideRequest>>,
+        TError,
+        {id: number;data: BodyType<RideRequestUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateRideRequestMutationOptions(options));
     }
 
 export const getListPaymentsUrl = (params?: ListPaymentsParams,) => {

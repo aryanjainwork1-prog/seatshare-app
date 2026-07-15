@@ -269,6 +269,81 @@ export interface CompleteInput {
   boardingCode?: string;
 }
 
+export interface RideRequest {
+  id: number;
+  passengerId: number;
+  pickupAddress: string;
+  dropoffAddress: string;
+  /** @nullable */
+  pickupLat?: number | null;
+  /** @nullable */
+  pickupLng?: number | null;
+  /** @nullable */
+  dropoffLat?: number | null;
+  /** @nullable */
+  dropoffLng?: number | null;
+  /** @nullable */
+  preferredDepartureTime?: string | null;
+  /** @nullable */
+  preferredArrivalTime?: string | null;
+  /** @nullable */
+  preferences?: string | null;
+  /** @nullable */
+  walkingDistanceKm?: number | null;
+  status: string;
+  /** @nullable */
+  assignedDriverProfileId?: number | null;
+  /** @nullable */
+  adminNotes?: string | null;
+  passenger?: User | null;
+  assignedDriver?: DriverProfile | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface RideRequestList {
+  data: RideRequest[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface RideRequestInput {
+  /** @minLength 1 */
+  pickupAddress: string;
+  /** @minLength 1 */
+  dropoffAddress: string;
+  pickupLat?: number;
+  pickupLng?: number;
+  dropoffLat?: number;
+  dropoffLng?: number;
+  preferredDepartureTime?: string;
+  preferredArrivalTime?: string;
+  preferences?: string;
+  walkingDistanceKm?: number;
+}
+
+export type RideRequestUpdateInputStatus = typeof RideRequestUpdateInputStatus[keyof typeof RideRequestUpdateInputStatus];
+
+
+export const RideRequestUpdateInputStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+  assigned: 'assigned',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface RideRequestUpdateInput {
+  status?: RideRequestUpdateInputStatus;
+  pickupAddress?: string;
+  dropoffAddress?: string;
+  /** @nullable */
+  assignedDriverProfileId?: number | null;
+  adminNotes?: string;
+}
+
 export interface Payment {
   id: number;
   bookingId: number;
@@ -499,6 +574,13 @@ limit?: number;
 export type ListBookingsParams = {
 status?: string;
 tripId?: number;
+passengerId?: number;
+page?: number;
+limit?: number;
+};
+
+export type ListRideRequestsParams = {
+status?: string;
 passengerId?: number;
 page?: number;
 limit?: number;

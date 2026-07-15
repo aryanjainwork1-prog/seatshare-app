@@ -7,4 +7,5 @@ export * from "./payments";
 export * from "./ratings";
 export * from "./support-tickets";
 export * from "./admin-logs";
+export * from "./ride-requests";
 export * from "./platform-settings";

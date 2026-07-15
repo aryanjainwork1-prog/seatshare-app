@@ -159,6 +159,28 @@ export function broadcastDriverLocation(
 
 export { notifyNearbyPassengers };
 
+/**
+ * Notify subscribed admin dashboard clients that a ride request was created
+ * or updated, so the Ride Requests module refreshes in near real-time.
+ */
+export function broadcastRideRequestEvent(
+  event: "ride_request_created" | "ride_request_updated",
+  rideRequestId: number,
+): void {
+  const message = JSON.stringify({
+    type: event,
+    rideRequestId,
+    at: new Date().toISOString(),
+  });
+  for (const client of adminClients) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    } else {
+      adminClients.delete(client);
+    }
+  }
+}
+
 export function setupWebSocket(server: Server): void {
   const wss = new WebSocketServer({ server, path: "/ws" });
 
