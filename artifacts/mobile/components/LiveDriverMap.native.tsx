@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
 import { useColors } from "@/hooks/useColors";
@@ -18,6 +18,14 @@ interface LiveDriverMapProps {
 const AnimatedMarker = Animated.createAnimatedComponent(Marker);
 
 const ANIM_DURATION_MS = 900;
+
+function fitRegion(driverLat: number, driverLng: number, pickupLat: number, pickupLng: number) {
+  const midLat = (driverLat + pickupLat) / 2;
+  const midLng = (driverLng + pickupLng) / 2;
+  const latDelta = Math.max(Math.abs(driverLat - pickupLat) * 2.5, 0.01);
+  const lngDelta = Math.max(Math.abs(driverLng - pickupLng) * 2.5, 0.01);
+  return { latitude: midLat, longitude: midLng, latitudeDelta: latDelta, longitudeDelta: lngDelta };
+}
 
 export function LiveDriverMap({
   driverLat,
@@ -47,16 +55,39 @@ export function LiveDriverMap({
   // Track whether first real location has been received so we can fit the map once
   const hasFit = useRef(false);
 
+  // Recenter button visibility — shown after the user pans away
+  const [showRecenter, setShowRecenter] = useState(false);
+  const recenterOpacity = useRef(new Animated.Value(0));
+  const isAnimatingOut = useRef(false);
+
+  function fadeInRecenter() {
+    if (isAnimatingOut.current) return;
+    setShowRecenter(true);
+    Animated.timing(recenterOpacity.current, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }
+
+  function handleRecenter() {
+    isAnimatingOut.current = true;
+    const region = fitRegion(driverLat, driverLng, pickupLat, pickupLng);
+    mapRef.current?.animateToRegion(region, 500);
+    Animated.timing(recenterOpacity.current, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowRecenter(false);
+      isAnimatingOut.current = false;
+    });
+  }
+
   // On first mount, set the initial region to fit both pins
   useEffect(() => {
-    const midLat = (driverLat + pickupLat) / 2;
-    const midLng = (driverLng + pickupLng) / 2;
-    const latDelta = Math.max(Math.abs(driverLat - pickupLat) * 2.5, 0.01);
-    const lngDelta = Math.max(Math.abs(driverLng - pickupLng) * 2.5, 0.01);
-    mapRef.current?.animateToRegion(
-      { latitude: midLat, longitude: midLng, latitudeDelta: latDelta, longitudeDelta: lngDelta },
-      400,
-    );
+    const region = fitRegion(driverLat, driverLng, pickupLat, pickupLng);
+    mapRef.current?.animateToRegion(region, 400);
     hasFit.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -71,22 +102,13 @@ export function LiveDriverMap({
     }).start();
 
     if (!hasFit.current) {
-      const midLat = (driverLat + pickupLat) / 2;
-      const midLng = (driverLng + pickupLng) / 2;
-      const latDelta = Math.max(Math.abs(driverLat - pickupLat) * 2.5, 0.01);
-      const lngDelta = Math.max(Math.abs(driverLng - pickupLng) * 2.5, 0.01);
-      mapRef.current?.animateToRegion(
-        { latitude: midLat, longitude: midLng, latitudeDelta: latDelta, longitudeDelta: lngDelta },
-        600,
-      );
+      const region = fitRegion(driverLat, driverLng, pickupLat, pickupLng);
+      mapRef.current?.animateToRegion(region, 600);
       hasFit.current = true;
     }
   }, [driverLat, driverLng, pickupLat, pickupLng]);
 
-  const midLat = (driverLat + pickupLat) / 2;
-  const midLng = (driverLng + pickupLng) / 2;
-  const latDelta = Math.max(Math.abs(driverLat - pickupLat) * 2.5, 0.01);
-  const lngDelta = Math.max(Math.abs(driverLng - pickupLng) * 2.5, 0.01);
+  const initialRegion = fitRegion(driverLat, driverLng, pickupLat, pickupLng);
 
   return (
     <View style={[styles.container, { borderColor: colors.border }]}>
@@ -121,43 +143,65 @@ export function LiveDriverMap({
         )}
       </View>
 
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        initialRegion={{
-          latitude: midLat,
-          longitude: midLng,
-          latitudeDelta: latDelta,
-          longitudeDelta: lngDelta,
-        }}
-      >
-        {/* Driver pin — animates smoothly to new position */}
-        <AnimatedMarker
-          coordinate={markerCoord.current}
-          title="Driver"
-          anchor={{ x: 0.5, y: 0.5 }}
-          tracksViewChanges={false}
+      <View style={styles.mapContainer}>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={initialRegion}
+          onPanDrag={fadeInRecenter}
         >
-          <View style={[styles.driverMarker, { backgroundColor: colors.primary, borderColor: "#fff" }]}>
-            <Feather name="navigation" size={14} color="#fff" />
-          </View>
-        </AnimatedMarker>
-
-        {/* Pickup pin — static */}
-        <Marker
-          coordinate={{ latitude: pickupLat, longitude: pickupLng }}
-          title="Your pickup"
-          anchor={{ x: 0.5, y: 1 }}
-          tracksViewChanges={false}
-        >
-          <View style={styles.pickupMarkerWrap}>
-            <View style={[styles.pickupMarker, { backgroundColor: colors.success, borderColor: "#fff" }]}>
-              <Feather name="map-pin" size={14} color="#fff" />
+          {/* Driver pin — animates smoothly to new position */}
+          <AnimatedMarker
+            coordinate={markerCoord.current}
+            title="Driver"
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
+          >
+            <View style={[styles.driverMarker, { backgroundColor: colors.primary, borderColor: "#fff" }]}>
+              <Feather name="navigation" size={14} color="#fff" />
             </View>
-            <View style={[styles.pickupStem, { backgroundColor: colors.success }]} />
-          </View>
-        </Marker>
-      </MapView>
+          </AnimatedMarker>
+
+          {/* Pickup pin — static */}
+          <Marker
+            coordinate={{ latitude: pickupLat, longitude: pickupLng }}
+            title="Your pickup"
+            anchor={{ x: 0.5, y: 1 }}
+            tracksViewChanges={false}
+          >
+            <View style={styles.pickupMarkerWrap}>
+              <View style={[styles.pickupMarker, { backgroundColor: colors.success, borderColor: "#fff" }]}>
+                <Feather name="map-pin" size={14} color="#fff" />
+              </View>
+              <View style={[styles.pickupStem, { backgroundColor: colors.success }]} />
+            </View>
+          </Marker>
+        </MapView>
+
+        {/* Floating recenter button */}
+        {showRecenter && (
+          <Animated.View
+            style={[
+              styles.recenterBtn,
+              {
+                opacity: recenterOpacity.current,
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                shadowColor: "#000",
+              },
+            ]}
+            pointerEvents="box-none"
+          >
+            <Pressable
+              onPress={handleRecenter}
+              style={styles.recenterPressable}
+              hitSlop={8}
+            >
+              <Feather name="crosshair" size={18} color={colors.primary} />
+            </Pressable>
+          </Animated.View>
+        )}
+      </View>
 
       <View
         style={[
@@ -207,9 +251,33 @@ const styles = StyleSheet.create({
   },
   statusText: { fontSize: 13 },
   updatedText: { fontSize: 12 },
-  map: {
+  mapContainer: {
     width: "100%",
     height: 240,
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  recenterBtn: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  recenterPressable: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   driverMarker: {
     width: 34,
