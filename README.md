@@ -1,35 +1,38 @@
 # SeatShare
 
-SeatShare is an AI-powered ride-sharing platform that intelligently matches passengers with drivers traveling similar routes to reduce costs and improve vehicle utilization.
+SeatShare is an AI-powered ride-sharing platform that intelligently matches passengers with drivers traveling similar routes to reduce travel costs, improve vehicle utilization, and provide a seamless ride-sharing experience through real-time tracking and smart route matching.
 
-## Features
+## ✨ Features
 
-- 🚗 Driver & passenger modes
+- 🚗 Driver & Passenger modes
 - 📍 Live GPS tracking
-- 🗺️ Smart route matching
-- 🔐 Authentication
-- 📡 Real-time WebSocket updates
+- 🗺️ Intelligent route matching
+- 🔐 Secure authentication
+- 📡 Real-time updates using WebSockets
 - 👨‍💼 Admin dashboard
-- 📱 Mobile app (Expo React Native)
+- 📱 Cross-platform mobile app (Expo React Native)
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 - TypeScript
 - React Native (Expo)
 - React
-- Express
+- Express.js
 - PostgreSQL
 - Drizzle ORM
 - WebSockets
 
-## Architecture
+## 📚 Documentation
 
-See:
-- ARCHITECTURE.md
-- API.md
-- DATABASE.md
-- PRD.md
-- 
+Detailed documentation is available in:
+
+- `ARCHITECTURE.md`
+- `API.md`
+- `DATABASE.md`
+- `PRD.md`
+- `ROADMAP.md`
+- `TESTING.md`
+
 ## 📱 Screenshots
 
 | Login | Setup |
@@ -43,6 +46,7 @@ See:
 | Profile | Profile Data |
 |---------|--------------|
 | ![](screenshots/profile.png) | ![](screenshots/profile-data.png) |
-## Status
 
-Currently under active development.
+## 🚀 Status
+
+🚧 Currently under active development.
